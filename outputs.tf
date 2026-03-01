@@ -2,11 +2,11 @@ output "resource_group_name" {
   value = azurerm_resource_group.pfe_rg.name
 }
 
-output "vm_name" {
+output "vm_names" {
   value = module.vm.vm_name
 }
 
-output "vm_public_ip" {
+output "vm_public_ips" {
   value = module.vm.vm_public_ip
 }
 

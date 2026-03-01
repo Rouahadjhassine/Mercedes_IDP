@@ -1,21 +1,307 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
+trigger: none
 
-trigger:
-- main
+parameters:
+  - name: action
+    displayName: "Action Terraform"
+    type: string
+    default: plan
+    values:
+      - plan
+      - apply
+      - destroy
 
-pool:
-  vmImage: ubuntu-latest
+  - name: environment
+    displayName: "Environnement"
+    type: string
+    default: dev
+    values:
+      - dev
+      - test
+      - staging
+      - prod
 
-steps:
-- task: AzureRmWebAppDeployment@5
-  inputs:
-    ConnectionType: 'AzureRM'
-    azureSubscription: 'MIC-IDP'
-    appType: 'webAppLinux'
-    WebAppName: 'test'
-    packageForLinux: '$(System.DefaultWorkingDirectory)/**/*.zip'
-    RuntimeStack: 'DOTNETCORE|9.0'
-    DeploymentTypeLinux: 'oneDeploy'
+  - name: location
+    displayName: "Région Azure"
+    type: string
+    default: "West Europe"
+    values:
+      - "West Europe"
+      - "North Europe"
+      - "France Central"
+      - "East US"
+      - "UK South"
+
+  - name: vm_count
+    displayName: "Nombre de VMs"
+    type: number
+    default: 1
+    values:
+      - 1
+      - 2
+      - 3
+
+  - name: vm_size
+    displayName: "Taille VM"
+    type: string
+    default: "Standard_B2s"
+    values:
+      - "Standard_B1s"
+      - "Standard_B2s"
+      - "Standard_B4ms"
+      - "Standard_D2s_v3"
+      - "Standard_D4s_v3"
+      - "Standard_E2s_v3"
+      - "Standard_F2s_v2"
+
+  - name: vm_os_type
+    displayName: "Système d'exploitation"
+    type: string
+    default: "windows"
+    values:
+      - "windows"
+      - "linux"
+
+  - name: vm_os_image
+    displayName: "Image OS"
+    type: string
+    default: "WindowsServer2022"
+    values:
+      - "WindowsServer2022"
+      - "WindowsServer2019"
+      - "WindowsServer2016"
+      - "UbuntuServer2204"
+      - "UbuntuServer2004"
+      - "RedHat9"
+
+  - name: vm_disk_type
+    displayName: "Type de disque VM"
+    type: string
+    default: "Standard_LRS"
+    values:
+      - "Standard_LRS"
+      - "StandardSSD_LRS"
+      - "Premium_LRS"
+
+  - name: storage_account_tier
+    displayName: "Tier Storage"
+    type: string
+    default: "Standard"
+    values:
+      - "Standard"
+      - "Premium"
+
+  - name: storage_replication_type
+    displayName: "Réplication Storage"
+    type: string
+    default: "LRS"
+    values:
+      - "LRS"
+      - "ZRS"
+      - "GRS"
+      - "GZRS"
+
+  - name: storage_access_tier
+    displayName: "Tier accès Storage"
+    type: string
+    default: "Hot"
+    values:
+      - "Hot"
+      - "Cool"
+      - "Archive"
+
+  - name: keyvault_sku
+    displayName: "SKU Key Vault"
+    type: string
+    default: "standard"
+    values:
+      - "standard"
+      - "premium"
+
+  - name: keyvault_purge_protection
+    displayName: "Protection suppression Key Vault"
+    type: boolean
+    default: false
+
+variables:
+  SERVICE_CONNECTION: "Azure-PFE-Roua-Auto"
+  SUBSCRIPTION_ID: "0b86b0f9-d3f5-4387-8003-3b8955b9e8fa"
+  VM_ADMIN_PASSWORD: "P@ssw0rdPFE2024!"
+
+stages:
+
+# ==================== STAGE 1: VALIDATE ====================
+- stage: Validate
+  displayName: "1 - Validation du code"
+  jobs:
+  - job: Validate
+    pool:
+      vmImage: "ubuntu-latest"
+    steps:
+
+    - task: TerraformInstaller@1
+      displayName: "Installer Terraform"
+      inputs:
+        terraformVersion: "1.14.5"
+
+    - task: TerraformTaskV4@4
+      displayName: "Terraform Init"
+      inputs:
+        provider: "azurerm"
+        command: "init"
+        backendServiceArm: $(SERVICE_CONNECTION)
+        backendAzureRmResourceGroupName: "pfe-rg-dev"
+        backendAzureRmStorageAccountName: "pfetfstate"
+        backendAzureRmContainerName: "tfstate"
+        backendAzureRmKey: "terraform.tfstate"
+
+    - task: TerraformTaskV4@4
+      displayName: "Terraform Validate"
+      inputs:
+        provider: "azurerm"
+        command: "validate"
+
+# ==================== STAGE 2: PLAN ====================
+- stage: Plan
+  displayName: "2 - Plan (aperçu)"
+  dependsOn: Validate
+  jobs:
+  - job: Plan
+    pool:
+      vmImage: "ubuntu-latest"
+    steps:
+
+    - task: TerraformInstaller@1
+      inputs:
+        terraformVersion: "1.14.5"
+
+    - task: TerraformTaskV4@4
+      displayName: "Terraform Init"
+      inputs:
+        provider: "azurerm"
+        command: "init"
+        backendServiceArm: $(SERVICE_CONNECTION)
+        backendAzureRmResourceGroupName: "pfe-rg-dev"
+        backendAzureRmStorageAccountName: "pfetfstate"
+        backendAzureRmContainerName: "tfstate"
+        backendAzureRmKey: "terraform.tfstate"
+
+    - task: TerraformTaskV4@4
+      displayName: "Terraform Plan"
+      inputs:
+        provider: "azurerm"
+        command: "plan"
+        environmentServiceNameAzureRM: $(SERVICE_CONNECTION)
+        commandOptions: >
+          -var="subscription_id=$(SUBSCRIPTION_ID)"
+          -var="environment=${{ parameters.environment }}"
+          -var="location=${{ parameters.location }}"
+          -var="vm_count=${{ parameters.vm_count }}"
+          -var="vm_size=${{ parameters.vm_size }}"
+          -var="vm_os_type=${{ parameters.vm_os_type }}"
+          -var="vm_os_image=${{ parameters.vm_os_image }}"
+          -var="vm_disk_type=${{ parameters.vm_disk_type }}"
+          -var="storage_account_tier=${{ parameters.storage_account_tier }}"
+          -var="storage_replication_type=${{ parameters.storage_replication_type }}"
+          -var="storage_access_tier=${{ parameters.storage_access_tier }}"
+          -var="keyvault_sku=${{ parameters.keyvault_sku }}"
+          -var="keyvault_purge_protection=${{ parameters.keyvault_purge_protection }}"
+          -var="vm_admin_password=$(VM_ADMIN_PASSWORD)"
+          -out=$(Build.ArtifactStagingDirectory)/tfplan
+
+    - publish: $(Build.ArtifactStagingDirectory)/tfplan
+      artifact: tfplan
+
+# ==================== STAGE 3: APPLY ====================
+- stage: Apply
+  displayName: "3 - Apply (créer ressources)"
+  dependsOn: Plan
+  condition: and(succeeded(), eq('${{ parameters.action }}', 'apply'))
+  jobs:
+  - deployment: Apply
+    environment: "azure-pfe"
+    pool:
+      vmImage: "ubuntu-latest"
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+
+          - task: TerraformInstaller@1
+            inputs:
+              terraformVersion: "1.14.5"
+
+          - checkout: self
+
+          - task: TerraformTaskV4@4
+            displayName: "Terraform Init"
+            inputs:
+              provider: "azurerm"
+              command: "init"
+              backendServiceArm: $(SERVICE_CONNECTION)
+              backendAzureRmResourceGroupName: "pfe-rg-dev"
+              backendAzureRmStorageAccountName: "pfetfstate"
+              backendAzureRmContainerName: "tfstate"
+              backendAzureRmKey: "terraform.tfstate"
+
+          - task: TerraformTaskV4@4
+            displayName: "Terraform Apply"
+            inputs:
+              provider: "azurerm"
+              command: "apply"
+              environmentServiceNameAzureRM: $(SERVICE_CONNECTION)
+              commandOptions: "-auto-approve $(Pipeline.Workspace)/tfplan/tfplan"
+
+# ==================== STAGE 4: DESTROY ====================
+- stage: Destroy
+  displayName: "4 - Destroy (supprimer)"
+  dependsOn: []
+  condition: eq('${{ parameters.action }}', 'destroy')
+  jobs:
+  - deployment: Destroy
+    environment: "azure-pfe"
+    pool:
+      vmImage: "ubuntu-latest"
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+
+          - task: TerraformInstaller@1
+            inputs:
+              terraformVersion: "1.14.5"
+
+          - checkout: self
+
+          - task: TerraformTaskV4@4
+            displayName: "Terraform Init"
+            inputs:
+              provider: "azurerm"
+              command: "init"
+              backendServiceArm: $(SERVICE_CONNECTION)
+              backendAzureRmResourceGroupName: "pfe-rg-dev"
+              backendAzureRmStorageAccountName: "pfetfstate"
+              backendAzureRmContainerName: "tfstate"
+              backendAzureRmKey: "terraform.tfstate"
+
+          - task: TerraformTaskV4@4
+            displayName: "Terraform Destroy"
+            inputs:
+              provider: "azurerm"
+              command: "destroy"
+              environmentServiceNameAzureRM: $(SERVICE_CONNECTION)
+              commandOptions: >
+                -auto-approve
+                -var="subscription_id=$(SUBSCRIPTION_ID)"
+                -var="environment=${{ parameters.environment }}"
+                -var="location=${{ parameters.location }}"
+                -var="vm_count=${{ parameters.vm_count }}"
+                -var="vm_size=${{ parameters.vm_size }}"
+                -var="vm_os_type=${{ parameters.vm_os_type }}"
+                -var="vm_os_image=${{ parameters.vm_os_image }}"
+                -var="vm_disk_type=${{ parameters.vm_disk_type }}"
+                -var="storage_account_tier=${{ parameters.storage_account_tier }}"
+                -var="storage_replication_type=${{ parameters.storage_replication_type }}"
+                -var="storage_access_tier=${{ parameters.storage_access_tier }}"
+                -var="keyvault_sku=${{ parameters.keyvault_sku }}"
+                -var="keyvault_purge_protection=${{ parameters.keyvault_purge_protection }}"
+                -var="vm_admin_password=$(VM_ADMIN_PASSWORD)"

@@ -175,7 +175,7 @@ stages:
     - task: AzureCLI@2
       displayName: "Terraform Init + Plan"
       inputs:
-        azureSubscription: "Azure-PFE-Roua-Auto"
+        azureSubscription: "MIC-IDP"
         scriptType: "bash"
         scriptLocation: "inlineScript"
         inlineScript: |
@@ -233,7 +233,7 @@ stages:
           - task: AzureCLI@2
             displayName: "Terraform Init + Apply"
             inputs:
-              azureSubscription: "Azure-PFE-Roua-Auto"
+              azureSubscription: "MIC-IDP"
               scriptType: "bash"
               scriptLocation: "inlineScript"
               inlineScript: |
@@ -277,7 +277,7 @@ stages:
           - task: AzureCLI@2
             displayName: "Terraform Init + Destroy"
             inputs:
-              azureSubscription: "Azure-PFE-Roua-Auto"
+              azureSubscription: "MIC-IDP"
               scriptType: "bash"
               scriptLocation: "inlineScript"
               inlineScript: |

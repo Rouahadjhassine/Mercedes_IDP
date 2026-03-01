@@ -123,7 +123,7 @@ parameters:
     default: false
 
 variables:
-  SERVICE_CONNECTION: "Azure-PFE-Roua-Auto"
+  TF_VERSION: "1.14.5"
   SUBSCRIPTION_ID: "0b86b0f9-d3f5-4387-8003-3b8955b9e8fa"
   VM_ADMIN_PASSWORD: "P@ssw0rdPFE2024!"
 
@@ -138,27 +138,20 @@ stages:
       vmImage: "ubuntu-latest"
     steps:
 
-    - task: TerraformInstaller@1
+    - checkout: self
+
+    - script: |
+        wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
+        unzip terraform_$(TF_VERSION)_linux_amd64.zip
+        sudo mv terraform /usr/local/bin/
+        terraform version
       displayName: "Installer Terraform"
-      inputs:
-        terraformVersion: "1.14.5"
 
-    - task: TerraformTaskV4@4
+    - script: terraform init -backend=false
       displayName: "Terraform Init"
-      inputs:
-        provider: "azurerm"
-        command: "init"
-        backendServiceArm: $(SERVICE_CONNECTION)
-        backendAzureRmResourceGroupName: "pfe-rg-dev"
-        backendAzureRmStorageAccountName: "pfetfstate"
-        backendAzureRmContainerName: "tfstate"
-        backendAzureRmKey: "terraform.tfstate"
 
-    - task: TerraformTaskV4@4
+    - script: terraform validate
       displayName: "Terraform Validate"
-      inputs:
-        provider: "azurerm"
-        command: "validate"
 
 # ==================== STAGE 2: PLAN ====================
 - stage: Plan
@@ -170,43 +163,46 @@ stages:
       vmImage: "ubuntu-latest"
     steps:
 
-    - task: TerraformInstaller@1
-      inputs:
-        terraformVersion: "1.14.5"
+    - checkout: self
 
-    - task: TerraformTaskV4@4
-      displayName: "Terraform Init"
-      inputs:
-        provider: "azurerm"
-        command: "init"
-        backendServiceArm: $(SERVICE_CONNECTION)
-        backendAzureRmResourceGroupName: "pfe-rg-dev"
-        backendAzureRmStorageAccountName: "pfetfstate"
-        backendAzureRmContainerName: "tfstate"
-        backendAzureRmKey: "terraform.tfstate"
+    - script: |
+        wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
+        unzip terraform_$(TF_VERSION)_linux_amd64.zip
+        sudo mv terraform /usr/local/bin/
+        terraform version
+      displayName: "Installer Terraform"
 
-    - task: TerraformTaskV4@4
-      displayName: "Terraform Plan"
+    - task: AzureCLI@2
+      displayName: "Terraform Init + Plan"
       inputs:
-        provider: "azurerm"
-        command: "plan"
-        environmentServiceNameAzureRM: $(SERVICE_CONNECTION)
-        commandOptions: >
-          -var="subscription_id=$(SUBSCRIPTION_ID)"
-          -var="environment=${{ parameters.environment }}"
-          -var="location=${{ parameters.location }}"
-          -var="vm_count=${{ parameters.vm_count }}"
-          -var="vm_size=${{ parameters.vm_size }}"
-          -var="vm_os_type=${{ parameters.vm_os_type }}"
-          -var="vm_os_image=${{ parameters.vm_os_image }}"
-          -var="vm_disk_type=${{ parameters.vm_disk_type }}"
-          -var="storage_account_tier=${{ parameters.storage_account_tier }}"
-          -var="storage_replication_type=${{ parameters.storage_replication_type }}"
-          -var="storage_access_tier=${{ parameters.storage_access_tier }}"
-          -var="keyvault_sku=${{ parameters.keyvault_sku }}"
-          -var="keyvault_purge_protection=${{ parameters.keyvault_purge_protection }}"
-          -var="vm_admin_password=$(VM_ADMIN_PASSWORD)"
-          -out=$(Build.ArtifactStagingDirectory)/tfplan
+        azureSubscription: "Azure-PFE-Roua-Auto"
+        scriptType: "bash"
+        scriptLocation: "inlineScript"
+        inlineScript: |
+          export ARM_CLIENT_ID=$servicePrincipalId
+          export ARM_CLIENT_SECRET=$servicePrincipalKey
+          export ARM_TENANT_ID=$tenantId
+          export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+
+          terraform init
+
+          terraform plan \
+            -var="subscription_id=$(SUBSCRIPTION_ID)" \
+            -var="environment=${{ parameters.environment }}" \
+            -var="location=${{ parameters.location }}" \
+            -var="vm_count=${{ parameters.vm_count }}" \
+            -var="vm_size=${{ parameters.vm_size }}" \
+            -var="vm_os_type=${{ parameters.vm_os_type }}" \
+            -var="vm_os_image=${{ parameters.vm_os_image }}" \
+            -var="vm_disk_type=${{ parameters.vm_disk_type }}" \
+            -var="storage_account_tier=${{ parameters.storage_account_tier }}" \
+            -var="storage_replication_type=${{ parameters.storage_replication_type }}" \
+            -var="storage_access_tier=${{ parameters.storage_access_tier }}" \
+            -var="keyvault_sku=${{ parameters.keyvault_sku }}" \
+            -var="keyvault_purge_protection=${{ parameters.keyvault_purge_protection }}" \
+            -var="vm_admin_password=$(VM_ADMIN_PASSWORD)" \
+            -out=$(Build.ArtifactStagingDirectory)/tfplan
+        addSpnToEnvironment: true
 
     - publish: $(Build.ArtifactStagingDirectory)/tfplan
       artifact: tfplan
@@ -226,30 +222,34 @@ stages:
         deploy:
           steps:
 
-          - task: TerraformInstaller@1
-            inputs:
-              terraformVersion: "1.14.5"
-
           - checkout: self
 
-          - task: TerraformTaskV4@4
-            displayName: "Terraform Init"
-            inputs:
-              provider: "azurerm"
-              command: "init"
-              backendServiceArm: $(SERVICE_CONNECTION)
-              backendAzureRmResourceGroupName: "pfe-rg-dev"
-              backendAzureRmStorageAccountName: "pfetfstate"
-              backendAzureRmContainerName: "tfstate"
-              backendAzureRmKey: "terraform.tfstate"
+          - script: |
+              wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
+              unzip terraform_$(TF_VERSION)_linux_amd64.zip
+              sudo mv terraform /usr/local/bin/
+            displayName: "Installer Terraform"
 
-          - task: TerraformTaskV4@4
-            displayName: "Terraform Apply"
+          - task: AzureCLI@2
+            displayName: "Terraform Init + Apply"
             inputs:
-              provider: "azurerm"
-              command: "apply"
-              environmentServiceNameAzureRM: $(SERVICE_CONNECTION)
-              commandOptions: "-auto-approve $(Pipeline.Workspace)/tfplan/tfplan"
+              azureSubscription: "Azure-PFE-Roua-Auto"
+              scriptType: "bash"
+              scriptLocation: "inlineScript"
+              inlineScript: |
+                export ARM_CLIENT_ID=$servicePrincipalId
+                export ARM_CLIENT_SECRET=$servicePrincipalKey
+                export ARM_TENANT_ID=$tenantId
+                export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+
+                terraform init
+
+                terraform apply -auto-approve \
+                  $(Pipeline.Workspace)/tfplan/tfplan
+
+                echo "========== Ressources créées =========="
+                terraform output
+              addSpnToEnvironment: true
 
 # ==================== STAGE 4: DESTROY ====================
 - stage: Destroy
@@ -266,42 +266,41 @@ stages:
         deploy:
           steps:
 
-          - task: TerraformInstaller@1
-            inputs:
-              terraformVersion: "1.14.5"
-
           - checkout: self
 
-          - task: TerraformTaskV4@4
-            displayName: "Terraform Init"
-            inputs:
-              provider: "azurerm"
-              command: "init"
-              backendServiceArm: $(SERVICE_CONNECTION)
-              backendAzureRmResourceGroupName: "pfe-rg-dev"
-              backendAzureRmStorageAccountName: "pfetfstate"
-              backendAzureRmContainerName: "tfstate"
-              backendAzureRmKey: "terraform.tfstate"
+          - script: |
+              wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
+              unzip terraform_$(TF_VERSION)_linux_amd64.zip
+              sudo mv terraform /usr/local/bin/
+            displayName: "Installer Terraform"
 
-          - task: TerraformTaskV4@4
-            displayName: "Terraform Destroy"
+          - task: AzureCLI@2
+            displayName: "Terraform Init + Destroy"
             inputs:
-              provider: "azurerm"
-              command: "destroy"
-              environmentServiceNameAzureRM: $(SERVICE_CONNECTION)
-              commandOptions: >
-                -auto-approve
-                -var="subscription_id=$(SUBSCRIPTION_ID)"
-                -var="environment=${{ parameters.environment }}"
-                -var="location=${{ parameters.location }}"
-                -var="vm_count=${{ parameters.vm_count }}"
-                -var="vm_size=${{ parameters.vm_size }}"
-                -var="vm_os_type=${{ parameters.vm_os_type }}"
-                -var="vm_os_image=${{ parameters.vm_os_image }}"
-                -var="vm_disk_type=${{ parameters.vm_disk_type }}"
-                -var="storage_account_tier=${{ parameters.storage_account_tier }}"
-                -var="storage_replication_type=${{ parameters.storage_replication_type }}"
-                -var="storage_access_tier=${{ parameters.storage_access_tier }}"
-                -var="keyvault_sku=${{ parameters.keyvault_sku }}"
-                -var="keyvault_purge_protection=${{ parameters.keyvault_purge_protection }}"
-                -var="vm_admin_password=$(VM_ADMIN_PASSWORD)"
+              azureSubscription: "Azure-PFE-Roua-Auto"
+              scriptType: "bash"
+              scriptLocation: "inlineScript"
+              inlineScript: |
+                export ARM_CLIENT_ID=$servicePrincipalId
+                export ARM_CLIENT_SECRET=$servicePrincipalKey
+                export ARM_TENANT_ID=$tenantId
+                export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+
+                terraform init
+
+                terraform destroy -auto-approve \
+                  -var="subscription_id=$(SUBSCRIPTION_ID)" \
+                  -var="environment=${{ parameters.environment }}" \
+                  -var="location=${{ parameters.location }}" \
+                  -var="vm_count=${{ parameters.vm_count }}" \
+                  -var="vm_size=${{ parameters.vm_size }}" \
+                  -var="vm_os_type=${{ parameters.vm_os_type }}" \
+                  -var="vm_os_image=${{ parameters.vm_os_image }}" \
+                  -var="vm_disk_type=${{ parameters.vm_disk_type }}" \
+                  -var="storage_account_tier=${{ parameters.storage_account_tier }}" \
+                  -var="storage_replication_type=${{ parameters.storage_replication_type }}" \
+                  -var="storage_access_tier=${{ parameters.storage_access_tier }}" \
+                  -var="keyvault_sku=${{ parameters.keyvault_sku }}" \
+                  -var="keyvault_purge_protection=${{ parameters.keyvault_purge_protection }}" \
+                  -var="vm_admin_password=$(VM_ADMIN_PASSWORD)"
+              addSpnToEnvironment: true

@@ -199,7 +199,7 @@ stages:
             -var="storage_replication_type=${{ parameters.storage_replication_type }}" \
             -var="storage_access_tier=${{ parameters.storage_access_tier }}" \
             -var="keyvault_sku=${{ parameters.keyvault_sku }}" \
-            -var="keyvault_purge_protection=${{ parameters.keyvault_purge_protection }}" \
+            -var="keyvault_purge_protection=$([ '${{ parameters.keyvault_purge_protection }}' = 'True' ] && echo true || echo false)" \
             -var="vm_admin_password=$(VM_ADMIN_PASSWORD)" \
             -out=$(Build.ArtifactStagingDirectory)/tfplan
         addSpnToEnvironment: true
@@ -301,6 +301,6 @@ stages:
                   -var="storage_replication_type=${{ parameters.storage_replication_type }}" \
                   -var="storage_access_tier=${{ parameters.storage_access_tier }}" \
                   -var="keyvault_sku=${{ parameters.keyvault_sku }}" \
-                  -var="keyvault_purge_protection=${{ parameters.keyvault_purge_protection }}" \
+                  -var="keyvault_purge_protection=$([ '${{ parameters.keyvault_purge_protection }}' = 'True' ] && echo true || echo false)" \
                   -var="vm_admin_password=$(VM_ADMIN_PASSWORD)"
               addSpnToEnvironment: true

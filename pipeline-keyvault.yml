@@ -1,0 +1,276 @@
+trigger: none
+
+# ============================================================
+# PIPELINE 4 – KEY VAULT
+# ⚠️  PRÉ-REQUIS :
+#   - Pipeline Resource Group → doit avoir été appliqué (obligatoire)
+#   - Pipeline Storage → doit avoir été appliqué (recommandé)
+#     Le KeyVault stockera automatiquement le nom du Storage
+#     comme secret si le remote state Storage est disponible.
+# ============================================================
+
+parameters:
+  - name: action
+    displayName: "⚡ Action Terraform"
+    type: string
+    default: plan
+    values:
+      - plan
+      - apply
+      - destroy
+
+  - name: keyvault_sku
+    displayName: "💎 SKU du Key Vault"
+    type: string
+    default: "standard"
+    values:
+      - "standard"
+      - "premium"
+
+  - name: keyvault_purge_protection
+    displayName: "🔒 Protection suppression définitive"
+    type: boolean
+    default: false
+
+  - name: keyvault_disk_encryption
+    displayName: "💿 Autoriser chiffrement disque"
+    type: boolean
+    default: true
+
+  - name: keyvault_deployment
+    displayName: "🚀 Autoriser déploiement depuis KV"
+    type: boolean
+    default: true
+
+  - name: keyvault_retention_days
+    displayName: "🗓️ Jours de rétention soft delete"
+    type: number
+    default: 7
+    values:
+      - 7
+      - 14
+      - 30
+      - 90
+
+variables:
+  TF_VERSION: "1.14.5"
+  TF_WORKING_DIR: "pipelines/keyvault"
+  SUBSCRIPTION_ID: "0b86b0f9-d3f5-4387-8003-3b8955b9e8fa"
+  VM_ADMIN_PASSWORD: "P@ssw0rdPFE2024!"
+
+stages:
+
+# ── STAGE 0 : PRÉ-REQUIS CHECK ──────────────────────────────
+- stage: CheckPrerequisites
+  displayName: "0 🔍 Vérifier les pré-requis"
+  jobs:
+  - job: CheckRemoteState
+    pool:
+      vmImage: "ubuntu-latest"
+    steps:
+    - checkout: self
+
+    - task: AzureCLI@2
+      displayName: "✅ Vérifier Resource Group + Storage dans remote state"
+      inputs:
+        azureSubscription: "MIC-IDP"
+        scriptType: "bash"
+        scriptLocation: "inlineScript"
+        addSpnToEnvironment: true
+        inlineScript: |
+          # Vérifier Resource Group (obligatoire)
+          RG_EXISTS=$(az storage blob exists \
+            --account-name pfetfstate \
+            --container-name tfstate \
+            --name resource-group.tfstate \
+            --output tsv \
+            --query exists 2>/dev/null || echo "false")
+
+          if [ "$RG_EXISTS" = "true" ]; then
+            echo "✅ Remote state Resource Group trouvé."
+          else
+            echo "❌ ERREUR: 'resource-group.tfstate' introuvable."
+            echo "   Veuillez d'abord exécuter le Pipeline Resource Group."
+            exit 1
+          fi
+
+          # Vérifier Storage (optionnel, juste un avertissement)
+          ST_EXISTS=$(az storage blob exists \
+            --account-name pfetfstate \
+            --container-name tfstate \
+            --name storage.tfstate \
+            --output tsv \
+            --query exists 2>/dev/null || echo "false")
+
+          if [ "$ST_EXISTS" = "true" ]; then
+            echo "ℹ️  Remote state Storage trouvé → le nom du storage sera stocké comme secret dans le KV."
+          else
+            echo "⚠️  Remote state Storage introuvable → le secret storage ne sera pas créé (ce n'est pas bloquant)."
+          fi
+
+# ── STAGE 1 : VALIDATE ──────────────────────────────────────
+- stage: Validate
+  displayName: "1 ✅ Validation du code"
+  dependsOn: CheckPrerequisites
+  jobs:
+  - job: Validate
+    pool:
+      vmImage: "ubuntu-latest"
+    steps:
+    - checkout: self
+
+    - script: |
+        wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
+        unzip -q terraform_$(TF_VERSION)_linux_amd64.zip
+        sudo mv terraform /usr/local/bin/
+      displayName: "📦 Installer Terraform"
+
+    - script: |
+        cd $(TF_WORKING_DIR)
+        terraform init -backend=false
+        terraform validate
+      displayName: "🔍 Terraform Validate"
+
+# ── STAGE 2 : PLAN ──────────────────────────────────────────
+- stage: Plan
+  displayName: "2 📋 Plan (aperçu)"
+  dependsOn: Validate
+  jobs:
+  - job: Plan
+    pool:
+      vmImage: "ubuntu-latest"
+    steps:
+    - checkout: self
+
+    - script: |
+        wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
+        unzip -q terraform_$(TF_VERSION)_linux_amd64.zip
+        sudo mv terraform /usr/local/bin/
+      displayName: "📦 Installer Terraform"
+
+    - task: AzureCLI@2
+      displayName: "🔗 Terraform Init + Plan"
+      inputs:
+        azureSubscription: "MIC-IDP"
+        scriptType: "bash"
+        scriptLocation: "inlineScript"
+        addSpnToEnvironment: true
+        inlineScript: |
+          export ARM_CLIENT_ID=$servicePrincipalId
+          export ARM_CLIENT_SECRET=$servicePrincipalKey
+          export ARM_TENANT_ID=$tenantId
+          export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+
+          cd $(TF_WORKING_DIR)
+          terraform init
+
+          terraform plan \
+            -var="subscription_id=$(SUBSCRIPTION_ID)" \
+            -var="keyvault_sku=${{ parameters.keyvault_sku }}" \
+            -var="keyvault_purge_protection=$([ '${{ parameters.keyvault_purge_protection }}' = 'True' ] && echo true || echo false)" \
+            -var="keyvault_disk_encryption=$([ '${{ parameters.keyvault_disk_encryption }}' = 'True' ] && echo true || echo false)" \
+            -var="keyvault_deployment=$([ '${{ parameters.keyvault_deployment }}' = 'True' ] && echo true || echo false)" \
+            -var="keyvault_retention_days=${{ parameters.keyvault_retention_days }}" \
+            -var="vm_admin_password=$(VM_ADMIN_PASSWORD)" \
+            -out=$(Build.ArtifactStagingDirectory)/tfplan
+
+    - publish: $(Build.ArtifactStagingDirectory)/tfplan
+      artifact: tfplan-keyvault
+
+# ── STAGE 3 : APPLY ─────────────────────────────────────────
+- stage: Apply
+  displayName: "3 🚀 Apply (créer Key Vault)"
+  dependsOn: Plan
+  condition: and(succeeded(), eq('${{ parameters.action }}', 'apply'))
+  jobs:
+  - deployment: Apply
+    environment: "azure-pfe"
+    pool:
+      vmImage: "ubuntu-latest"
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+
+          - script: |
+              wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
+              unzip -q terraform_$(TF_VERSION)_linux_amd64.zip
+              sudo mv terraform /usr/local/bin/
+            displayName: "📦 Installer Terraform"
+
+          - task: AzureCLI@2
+            displayName: "✅ Terraform Apply"
+            inputs:
+              azureSubscription: "MIC-IDP"
+              scriptType: "bash"
+              scriptLocation: "inlineScript"
+              addSpnToEnvironment: true
+              inlineScript: |
+                export ARM_CLIENT_ID=$servicePrincipalId
+                export ARM_CLIENT_SECRET=$servicePrincipalKey
+                export ARM_TENANT_ID=$tenantId
+                export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+
+                cd $(TF_WORKING_DIR)
+                terraform init
+                terraform apply -auto-approve \
+                  $(Pipeline.Workspace)/tfplan-keyvault/tfplan
+
+                echo ""
+                echo "=========================================="
+                echo "  ✅ Key Vault créé avec succès !"
+                echo "  📍 Resource Group lu depuis le remote state"
+                echo "  💎 SKU: ${{ parameters.keyvault_sku }}"
+                echo "  🔑 Secrets stockés:"
+                echo "     - vm-admin-password"
+                echo "     - environment-name"
+                echo "     - storage-account-name (si Storage déployé)"
+                echo "=========================================="
+                terraform output
+
+# ── STAGE 4 : DESTROY ───────────────────────────────────────
+- stage: Destroy
+  displayName: "4 🗑️ Destroy (supprimer Key Vault)"
+  dependsOn: []
+  condition: eq('${{ parameters.action }}', 'destroy')
+  jobs:
+  - deployment: Destroy
+    environment: "azure-pfe"
+    pool:
+      vmImage: "ubuntu-latest"
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+
+          - script: |
+              wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
+              unzip -q terraform_$(TF_VERSION)_linux_amd64.zip
+              sudo mv terraform /usr/local/bin/
+            displayName: "📦 Installer Terraform"
+
+          - task: AzureCLI@2
+            displayName: "🗑️ Terraform Destroy"
+            inputs:
+              azureSubscription: "MIC-IDP"
+              scriptType: "bash"
+              scriptLocation: "inlineScript"
+              addSpnToEnvironment: true
+              inlineScript: |
+                export ARM_CLIENT_ID=$servicePrincipalId
+                export ARM_CLIENT_SECRET=$servicePrincipalKey
+                export ARM_TENANT_ID=$tenantId
+                export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+
+                cd $(TF_WORKING_DIR)
+                terraform init
+                terraform destroy -auto-approve \
+                  -var="subscription_id=$(SUBSCRIPTION_ID)" \
+                  -var="keyvault_sku=${{ parameters.keyvault_sku }}" \
+                  -var="keyvault_purge_protection=$([ '${{ parameters.keyvault_purge_protection }}' = 'True' ] && echo true || echo false)" \
+                  -var="keyvault_disk_encryption=$([ '${{ parameters.keyvault_disk_encryption }}' = 'True' ] && echo true || echo false)" \
+                  -var="keyvault_deployment=$([ '${{ parameters.keyvault_deployment }}' = 'True' ] && echo true || echo false)" \
+                  -var="keyvault_retention_days=${{ parameters.keyvault_retention_days }}" \
+                  -var="vm_admin_password=$(VM_ADMIN_PASSWORD)"

@@ -1,0 +1,286 @@
+trigger: none
+
+# ============================================================
+# PIPELINE 2 – MACHINE VIRTUELLE (VM)
+# ⚠️  PRÉ-REQUIS : Le Pipeline Resource Group doit avoir été
+#     exécuté avec "apply" avant ce pipeline.
+#     Ce pipeline lit le Resource Group depuis le remote state.
+# ============================================================
+
+parameters:
+  - name: action
+    displayName: "⚡ Action Terraform"
+    type: string
+    default: plan
+    values:
+      - plan
+      - apply
+      - destroy
+
+  - name: vm_count
+    displayName: "🖥️ Nombre de VMs"
+    type: number
+    default: 1
+    values:
+      - 1
+      - 2
+      - 3
+
+  - name: vm_size
+    displayName: "📐 Taille de la VM"
+    type: string
+    default: "Standard_B2s"
+    values:
+      - "Standard_B1s"
+      - "Standard_B2s"
+      - "Standard_B4ms"
+      - "Standard_D2s_v3"
+      - "Standard_D4s_v3"
+      - "Standard_E2s_v3"
+      - "Standard_F2s_v2"
+
+  - name: vm_os_type
+    displayName: "💻 Système d'exploitation"
+    type: string
+    default: "windows"
+    values:
+      - "windows"
+      - "linux"
+
+  - name: vm_os_image
+    displayName: "🖼️ Image OS"
+    type: string
+    default: "WindowsServer2022"
+    values:
+      - "WindowsServer2022"
+      - "WindowsServer2019"
+      - "WindowsServer2016"
+      - "UbuntuServer2204"
+      - "UbuntuServer2004"
+      - "RedHat9"
+
+  - name: vm_disk_type
+    displayName: "💾 Type de disque"
+    type: string
+    default: "Standard_LRS"
+    values:
+      - "Standard_LRS"
+      - "StandardSSD_LRS"
+      - "Premium_LRS"
+
+variables:
+  TF_VERSION: "1.14.5"
+  TF_WORKING_DIR: "pipelines/vm"
+  SUBSCRIPTION_ID: "0b86b0f9-d3f5-4387-8003-3b8955b9e8fa"
+  VM_ADMIN_PASSWORD: "P@ssw0rdPFE2024!"
+
+stages:
+
+# ── STAGE 1 : PRÉ-REQUIS CHECK ──────────────────────────────
+- stage: CheckPrerequisites
+  displayName: "0 🔍 Vérifier les pré-requis"
+  jobs:
+  - job: CheckRemoteState
+    pool:
+      vmImage: "ubuntu-latest"
+    steps:
+    - checkout: self
+
+    - script: |
+        wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
+        unzip -q terraform_$(TF_VERSION)_linux_amd64.zip
+        sudo mv terraform /usr/local/bin/
+      displayName: "📦 Installer Terraform"
+
+    - task: AzureCLI@2
+      displayName: "✅ Vérifier que le Resource Group existe dans le remote state"
+      inputs:
+        azureSubscription: "MIC-IDP"
+        scriptType: "bash"
+        scriptLocation: "inlineScript"
+        addSpnToEnvironment: true
+        inlineScript: |
+          export ARM_CLIENT_ID=$servicePrincipalId
+          export ARM_CLIENT_SECRET=$servicePrincipalKey
+          export ARM_TENANT_ID=$tenantId
+          export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+
+          # Vérifier que le blob du remote state existe
+          EXISTS=$(az storage blob exists \
+            --account-name pfetfstate \
+            --container-name tfstate \
+            --name resource-group.tfstate \
+            --output tsv \
+            --query exists 2>/dev/null || echo "false")
+
+          if [ "$EXISTS" = "true" ]; then
+            echo "✅ Remote state Resource Group trouvé. Poursuite..."
+          else
+            echo "❌ ERREUR: Le remote state 'resource-group.tfstate' n'existe pas."
+            echo "   Veuillez d'abord exécuter le Pipeline Resource Group avec 'apply'."
+            exit 1
+          fi
+
+# ── STAGE 2 : VALIDATE ──────────────────────────────────────
+- stage: Validate
+  displayName: "1 ✅ Validation du code"
+  dependsOn: CheckPrerequisites
+  jobs:
+  - job: Validate
+    pool:
+      vmImage: "ubuntu-latest"
+    steps:
+    - checkout: self
+
+    - script: |
+        wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
+        unzip -q terraform_$(TF_VERSION)_linux_amd64.zip
+        sudo mv terraform /usr/local/bin/
+      displayName: "📦 Installer Terraform"
+
+    - script: |
+        cd $(TF_WORKING_DIR)
+        terraform init -backend=false
+        terraform validate
+      displayName: "🔍 Terraform Validate"
+
+# ── STAGE 3 : PLAN ──────────────────────────────────────────
+- stage: Plan
+  displayName: "2 📋 Plan (aperçu)"
+  dependsOn: Validate
+  jobs:
+  - job: Plan
+    pool:
+      vmImage: "ubuntu-latest"
+    steps:
+    - checkout: self
+
+    - script: |
+        wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
+        unzip -q terraform_$(TF_VERSION)_linux_amd64.zip
+        sudo mv terraform /usr/local/bin/
+      displayName: "📦 Installer Terraform"
+
+    - task: AzureCLI@2
+      displayName: "🔗 Terraform Init + Plan"
+      inputs:
+        azureSubscription: "MIC-IDP"
+        scriptType: "bash"
+        scriptLocation: "inlineScript"
+        addSpnToEnvironment: true
+        inlineScript: |
+          export ARM_CLIENT_ID=$servicePrincipalId
+          export ARM_CLIENT_SECRET=$servicePrincipalKey
+          export ARM_TENANT_ID=$tenantId
+          export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+
+          cd $(TF_WORKING_DIR)
+          terraform init
+
+          terraform plan \
+            -var="subscription_id=$(SUBSCRIPTION_ID)" \
+            -var="vm_count=${{ parameters.vm_count }}" \
+            -var="vm_size=${{ parameters.vm_size }}" \
+            -var="vm_os_type=${{ parameters.vm_os_type }}" \
+            -var="vm_os_image=${{ parameters.vm_os_image }}" \
+            -var="vm_disk_type=${{ parameters.vm_disk_type }}" \
+            -var="vm_admin_password=$(VM_ADMIN_PASSWORD)" \
+            -out=$(Build.ArtifactStagingDirectory)/tfplan
+
+    - publish: $(Build.ArtifactStagingDirectory)/tfplan
+      artifact: tfplan-vm
+
+# ── STAGE 4 : APPLY ─────────────────────────────────────────
+- stage: Apply
+  displayName: "3 🚀 Apply (créer VM)"
+  dependsOn: Plan
+  condition: and(succeeded(), eq('${{ parameters.action }}', 'apply'))
+  jobs:
+  - deployment: Apply
+    environment: "azure-pfe"
+    pool:
+      vmImage: "ubuntu-latest"
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+
+          - script: |
+              wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
+              unzip -q terraform_$(TF_VERSION)_linux_amd64.zip
+              sudo mv terraform /usr/local/bin/
+            displayName: "📦 Installer Terraform"
+
+          - task: AzureCLI@2
+            displayName: "✅ Terraform Apply"
+            inputs:
+              azureSubscription: "MIC-IDP"
+              scriptType: "bash"
+              scriptLocation: "inlineScript"
+              addSpnToEnvironment: true
+              inlineScript: |
+                export ARM_CLIENT_ID=$servicePrincipalId
+                export ARM_CLIENT_SECRET=$servicePrincipalKey
+                export ARM_TENANT_ID=$tenantId
+                export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+
+                cd $(TF_WORKING_DIR)
+                terraform init
+                terraform apply -auto-approve \
+                  $(Pipeline.Workspace)/tfplan-vm/tfplan
+
+                echo ""
+                echo "=========================================="
+                echo "  ✅ VM(s) créée(s) avec succès !"
+                echo "  📍 Resource Group lu depuis le remote state"
+                echo "  🖥️  OS: ${{ parameters.vm_os_type }} (${{ parameters.vm_os_image }})"
+                echo "  📐 Taille: ${{ parameters.vm_size }} x ${{ parameters.vm_count }}"
+                echo "=========================================="
+                terraform output
+
+# ── STAGE 5 : DESTROY ───────────────────────────────────────
+- stage: Destroy
+  displayName: "4 🗑️ Destroy (supprimer VM)"
+  dependsOn: []
+  condition: eq('${{ parameters.action }}', 'destroy')
+  jobs:
+  - deployment: Destroy
+    environment: "azure-pfe"
+    pool:
+      vmImage: "ubuntu-latest"
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+
+          - script: |
+              wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
+              unzip -q terraform_$(TF_VERSION)_linux_amd64.zip
+              sudo mv terraform /usr/local/bin/
+            displayName: "📦 Installer Terraform"
+
+          - task: AzureCLI@2
+            displayName: "🗑️ Terraform Destroy"
+            inputs:
+              azureSubscription: "MIC-IDP"
+              scriptType: "bash"
+              scriptLocation: "inlineScript"
+              addSpnToEnvironment: true
+              inlineScript: |
+                export ARM_CLIENT_ID=$servicePrincipalId
+                export ARM_CLIENT_SECRET=$servicePrincipalKey
+                export ARM_TENANT_ID=$tenantId
+                export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+
+                cd $(TF_WORKING_DIR)
+                terraform init
+                terraform destroy -auto-approve \
+                  -var="subscription_id=$(SUBSCRIPTION_ID)" \
+                  -var="vm_count=${{ parameters.vm_count }}" \
+                  -var="vm_size=${{ parameters.vm_size }}" \
+                  -var="vm_os_type=${{ parameters.vm_os_type }}" \
+                  -var="vm_os_image=${{ parameters.vm_os_image }}" \
+                  -var="vm_disk_type=${{ parameters.vm_disk_type }}" \
+                  -var="vm_admin_password=$(VM_ADMIN_PASSWORD)"

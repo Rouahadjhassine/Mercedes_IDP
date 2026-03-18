@@ -1,0 +1,268 @@
+trigger: none
+
+# ============================================================
+# PIPELINE 3 – STORAGE ACCOUNT
+# ⚠️  PRÉ-REQUIS : Le Pipeline Resource Group doit avoir été
+#     exécuté avec "apply" avant ce pipeline.
+#     Ce pipeline lit le Resource Group depuis le remote state.
+# ============================================================
+
+parameters:
+  - name: action
+    displayName: "⚡ Action Terraform"
+    type: string
+    default: plan
+    values:
+      - plan
+      - apply
+      - destroy
+
+  - name: storage_account_tier
+    displayName: "💲 Tier du Storage Account"
+    type: string
+    default: "Standard"
+    values:
+      - "Standard"
+      - "Premium"
+
+  - name: storage_replication_type
+    displayName: "🔁 Type de réplication"
+    type: string
+    default: "LRS"
+    values:
+      - "LRS"
+      - "ZRS"
+      - "GRS"
+      - "GZRS"
+
+  - name: storage_access_tier
+    displayName: "🌡️ Tier d'accès"
+    type: string
+    default: "Hot"
+    values:
+      - "Hot"
+      - "Cool"
+      - "Archive"
+
+  - name: storage_kind
+    displayName: "🗂️ Kind du Storage"
+    type: string
+    default: "StorageV2"
+    values:
+      - "StorageV2"
+      - "BlobStorage"
+      - "FileStorage"
+
+  - name: storage_retention_days
+    displayName: "🗓️ Jours de rétention (soft delete)"
+    type: number
+    default: 7
+    values:
+      - 7
+      - 14
+      - 30
+      - 90
+
+variables:
+  TF_VERSION: "1.14.5"
+  TF_WORKING_DIR: "pipelines/storage"
+  SUBSCRIPTION_ID: "0b86b0f9-d3f5-4387-8003-3b8955b9e8fa"
+
+stages:
+
+# ── STAGE 0 : PRÉ-REQUIS CHECK ──────────────────────────────
+- stage: CheckPrerequisites
+  displayName: "0 🔍 Vérifier les pré-requis"
+  jobs:
+  - job: CheckRemoteState
+    pool:
+      vmImage: "ubuntu-latest"
+    steps:
+    - checkout: self
+
+    - task: AzureCLI@2
+      displayName: "✅ Vérifier que le Resource Group existe dans le remote state"
+      inputs:
+        azureSubscription: "MIC-IDP"
+        scriptType: "bash"
+        scriptLocation: "inlineScript"
+        addSpnToEnvironment: true
+        inlineScript: |
+          EXISTS=$(az storage blob exists \
+            --account-name pfetfstate \
+            --container-name tfstate \
+            --name resource-group.tfstate \
+            --output tsv \
+            --query exists 2>/dev/null || echo "false")
+
+          if [ "$EXISTS" = "true" ]; then
+            echo "✅ Remote state Resource Group trouvé. Poursuite..."
+          else
+            echo "❌ ERREUR: Le remote state 'resource-group.tfstate' n'existe pas."
+            echo "   Veuillez d'abord exécuter le Pipeline Resource Group avec 'apply'."
+            exit 1
+          fi
+
+# ── STAGE 1 : VALIDATE ──────────────────────────────────────
+- stage: Validate
+  displayName: "1 ✅ Validation du code"
+  dependsOn: CheckPrerequisites
+  jobs:
+  - job: Validate
+    pool:
+      vmImage: "ubuntu-latest"
+    steps:
+    - checkout: self
+
+    - script: |
+        wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
+        unzip -q terraform_$(TF_VERSION)_linux_amd64.zip
+        sudo mv terraform /usr/local/bin/
+      displayName: "📦 Installer Terraform"
+
+    - script: |
+        cd $(TF_WORKING_DIR)
+        terraform init -backend=false
+        terraform validate
+      displayName: "🔍 Terraform Validate"
+
+# ── STAGE 2 : PLAN ──────────────────────────────────────────
+- stage: Plan
+  displayName: "2 📋 Plan (aperçu)"
+  dependsOn: Validate
+  jobs:
+  - job: Plan
+    pool:
+      vmImage: "ubuntu-latest"
+    steps:
+    - checkout: self
+
+    - script: |
+        wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
+        unzip -q terraform_$(TF_VERSION)_linux_amd64.zip
+        sudo mv terraform /usr/local/bin/
+      displayName: "📦 Installer Terraform"
+
+    - task: AzureCLI@2
+      displayName: "🔗 Terraform Init + Plan"
+      inputs:
+        azureSubscription: "MIC-IDP"
+        scriptType: "bash"
+        scriptLocation: "inlineScript"
+        addSpnToEnvironment: true
+        inlineScript: |
+          export ARM_CLIENT_ID=$servicePrincipalId
+          export ARM_CLIENT_SECRET=$servicePrincipalKey
+          export ARM_TENANT_ID=$tenantId
+          export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+
+          cd $(TF_WORKING_DIR)
+          terraform init
+
+          terraform plan \
+            -var="subscription_id=$(SUBSCRIPTION_ID)" \
+            -var="storage_account_tier=${{ parameters.storage_account_tier }}" \
+            -var="storage_replication_type=${{ parameters.storage_replication_type }}" \
+            -var="storage_access_tier=${{ parameters.storage_access_tier }}" \
+            -var="storage_kind=${{ parameters.storage_kind }}" \
+            -var="storage_retention_days=${{ parameters.storage_retention_days }}" \
+            -out=$(Build.ArtifactStagingDirectory)/tfplan
+
+    - publish: $(Build.ArtifactStagingDirectory)/tfplan
+      artifact: tfplan-storage
+
+# ── STAGE 3 : APPLY ─────────────────────────────────────────
+- stage: Apply
+  displayName: "3 🚀 Apply (créer Storage)"
+  dependsOn: Plan
+  condition: and(succeeded(), eq('${{ parameters.action }}', 'apply'))
+  jobs:
+  - deployment: Apply
+    environment: "azure-pfe"
+    pool:
+      vmImage: "ubuntu-latest"
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+
+          - script: |
+              wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
+              unzip -q terraform_$(TF_VERSION)_linux_amd64.zip
+              sudo mv terraform /usr/local/bin/
+            displayName: "📦 Installer Terraform"
+
+          - task: AzureCLI@2
+            displayName: "✅ Terraform Apply"
+            inputs:
+              azureSubscription: "MIC-IDP"
+              scriptType: "bash"
+              scriptLocation: "inlineScript"
+              addSpnToEnvironment: true
+              inlineScript: |
+                export ARM_CLIENT_ID=$servicePrincipalId
+                export ARM_CLIENT_SECRET=$servicePrincipalKey
+                export ARM_TENANT_ID=$tenantId
+                export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+
+                cd $(TF_WORKING_DIR)
+                terraform init
+                terraform apply -auto-approve \
+                  $(Pipeline.Workspace)/tfplan-storage/tfplan
+
+                echo ""
+                echo "=========================================="
+                echo "  ✅ Storage Account créé avec succès !"
+                echo "  📍 Resource Group lu depuis le remote state"
+                echo "  💲 Tier: ${{ parameters.storage_account_tier }}"
+                echo "  🔁 Réplication: ${{ parameters.storage_replication_type }}"
+                echo "  🌡️  Accès: ${{ parameters.storage_access_tier }}"
+                echo "  📤 Outputs sauvegardés → disponibles pour KeyVault"
+                echo "=========================================="
+                terraform output
+
+# ── STAGE 4 : DESTROY ───────────────────────────────────────
+- stage: Destroy
+  displayName: "4 🗑️ Destroy (supprimer Storage)"
+  dependsOn: []
+  condition: eq('${{ parameters.action }}', 'destroy')
+  jobs:
+  - deployment: Destroy
+    environment: "azure-pfe"
+    pool:
+      vmImage: "ubuntu-latest"
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+
+          - script: |
+              wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
+              unzip -q terraform_$(TF_VERSION)_linux_amd64.zip
+              sudo mv terraform /usr/local/bin/
+            displayName: "📦 Installer Terraform"
+
+          - task: AzureCLI@2
+            displayName: "🗑️ Terraform Destroy"
+            inputs:
+              azureSubscription: "MIC-IDP"
+              scriptType: "bash"
+              scriptLocation: "inlineScript"
+              addSpnToEnvironment: true
+              inlineScript: |
+                export ARM_CLIENT_ID=$servicePrincipalId
+                export ARM_CLIENT_SECRET=$servicePrincipalKey
+                export ARM_TENANT_ID=$tenantId
+                export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+
+                cd $(TF_WORKING_DIR)
+                terraform init
+                terraform destroy -auto-approve \
+                  -var="subscription_id=$(SUBSCRIPTION_ID)" \
+                  -var="storage_account_tier=${{ parameters.storage_account_tier }}" \
+                  -var="storage_replication_type=${{ parameters.storage_replication_type }}" \
+                  -var="storage_access_tier=${{ parameters.storage_access_tier }}" \
+                  -var="storage_kind=${{ parameters.storage_kind }}" \
+                  -var="storage_retention_days=${{ parameters.storage_retention_days }}"

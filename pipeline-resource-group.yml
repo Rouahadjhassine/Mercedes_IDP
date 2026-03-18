@@ -2,13 +2,15 @@ trigger: none
 
 # ============================================================
 # PIPELINE 1 – RESOURCE GROUP
-# Crée le Resource Group Azure qui sera partagé avec
-# les 3 autres pipelines (VM, Storage, KeyVault)
+# Reproduit l'expérience "Créer un Resource Group" du portail Azure
+# avec toutes les options disponibles en listes déroulantes
 # ============================================================
 
 parameters:
+
+  # ── ACTION ────────────────────────────────────────────────
   - name: action
-    displayName: "⚡ Action Terraform"
+    displayName: "⚡ Action"
     type: string
     default: plan
     values:
@@ -16,36 +18,144 @@ parameters:
       - apply
       - destroy
 
-  - name: environment
-    displayName: "🌍 Environnement"
+  # ── ABONNEMENT ────────────────────────────────────────────
+  - name: subscription_name
+    displayName: "📋 Abonnement Azure"
     type: string
-    default: dev
+    default: "MIC-SECOPS-DEV"
     values:
-      - dev
-      - test
-      - staging
-      - prod
+      - "MIC-SECOPS-DEV"
+      - "MIC-SECOPS-TEST"
+      - "MIC-SECOPS-STAGING"
+      - "MIC-SECOPS-PROD"
 
-  - name: location
-    displayName: "📍 Région Azure"
-    type: string
-    default: "West Europe"
-    values:
-      - "West Europe"
-      - "North Europe"
-      - "France Central"
-      - "East US"
-      - "UK South"
-
-  - name: prefix
-    displayName: "🏷️ Préfixe des ressources"
+  # ── NOM DU RESOURCE GROUP ─────────────────────────────────
+  - name: rg_name_prefix
+    displayName: "🏷️ Préfixe du nom (format: PREFIX-rg-ENV)"
     type: string
     default: "mic"
     values:
       - "mic"
       - "pfe"
       - "idp"
+      - "mic-secops"
+      - "mic-idp"
+      - "ntt"
+      - "mb"
+
+  # ── RÉGION ────────────────────────────────────────────────
+  - name: location
+    displayName: "🌍 Région (Region)"
+    type: string
+    default: "West Europe"
+    values:
+      # Europe
+      - "West Europe"
+      - "North Europe"
+      - "France Central"
+      - "France South"
+      - "Germany West Central"
+      - "Switzerland North"
+      - "UK South"
+      - "UK West"
+      - "Sweden Central"
+      - "Norway East"
+      # Amériques
+      - "East US"
+      - "East US 2"
+      - "West US"
+      - "West US 2"
+      - "Central US"
+      - "Canada Central"
+      - "Canada East"
+      # Asie / Pacifique
+      - "Southeast Asia"
+      - "East Asia"
+      - "Australia East"
+      - "Japan East"
+
+  # ── ENVIRONNEMENT ─────────────────────────────────────────
+  - name: environment
+    displayName: "🌐 Environnement"
+    type: string
+    default: "dev"
+    values:
       - "dev"
+      - "test"
+      - "staging"
+      - "prod"
+      - "sandbox"
+      - "poc"
+
+  # ─────────────────────────────────────────────────────────
+  # TAGS (comme dans l'onglet "Tags" du portail Azure)
+  # ─────────────────────────────────────────────────────────
+
+  - name: tag_owner
+    displayName: "🏷️ Tag – Owner (équipe propriétaire)"
+    type: string
+    default: "MIC-SECOPS"
+    values:
+      - "MIC-SECOPS"
+      - "MIC-IDP"
+      - "NTT-DATA"
+      - "Mercedes-Benz"
+      - "Platform-Team"
+      - "DevOps-Team"
+
+  - name: tag_project
+    displayName: "🏷️ Tag – Project"
+    type: string
+    default: "IDP-PFE"
+    values:
+      - "IDP-PFE"
+      - "Mail-API"
+      - "PKI"
+      - "DNS"
+      - "TokenMaster"
+      - "SIEM"
+      - "Platform"
+
+  - name: tag_cost_center
+    displayName: "🏷️ Tag – Cost Center"
+    type: string
+    default: "MIC-001"
+    values:
+      - "MIC-001"
+      - "MIC-002"
+      - "SECOPS-100"
+      - "INFRA-200"
+      - "RD-300"
+
+  - name: tag_managed_by
+    displayName: "🏷️ Tag – Managed By"
+    type: string
+    default: "Terraform"
+    values:
+      - "Terraform"
+      - "OpenTofu"
+      - "Bicep"
+      - "Manual"
+
+  - name: tag_criticality
+    displayName: "🏷️ Tag – Criticality"
+    type: string
+    default: "Medium"
+    values:
+      - "Low"
+      - "Medium"
+      - "High"
+      - "Critical"
+
+  - name: tag_data_classification
+    displayName: "🏷️ Tag – Data Classification"
+    type: string
+    default: "Internal"
+    values:
+      - "Public"
+      - "Internal"
+      - "Confidential"
+      - "Restricted"
 
 variables:
   TF_VERSION: "1.14.5"
@@ -54,7 +164,7 @@ variables:
 
 stages:
 
-# ── STAGE 0 : SETUP BACKEND (automatique) ───────────────────
+# ── STAGE 0 : SETUP BACKEND (automatique, sans commandes manuelles) ──
 - stage: SetupBackend
   displayName: "0 🗄️ Préparer le backend Terraform"
   jobs:
@@ -65,25 +175,28 @@ stages:
     - checkout: self
 
     - task: AzureCLI@2
-      displayName: "⚙️ Créer le backend Terraform si inexistant"
+      displayName: "⚙️ Créer le backend Terraform automatiquement"
       inputs:
         azureSubscription: "MIC-IDP"
         scriptType: "bash"
         scriptLocation: "inlineScript"
         inlineScript: |
-          # ── Resource Group du backend ─────────────────────────────
+          echo "=== Vérification/création du backend Terraform ==="
+
+          # Resource Group du backend
           RG_EXISTS=$(az group exists --name rg-terraform-state)
           if [ "$RG_EXISTS" = "false" ]; then
             echo "📁 Création du Resource Group backend..."
-            az group create --name rg-terraform-state --location "West Europe"
+            az group create --name rg-terraform-state --location "West Europe" \
+              --tags ManagedBy=Terraform Project=IDP-Backend
           else
-            echo "✅ Resource Group backend déjà existant."
+            echo "✅ RG backend existant."
           fi
 
-          # ── Storage Account du backend ────────────────────────────
+          # Storage Account du backend
           SA_EXISTS=$(az storage account check-name --name pfetfstate --query nameAvailable -o tsv)
           if [ "$SA_EXISTS" = "true" ]; then
-            echo "📦 Création du Storage Account Terraform backend..."
+            echo "📦 Création du Storage Account backend..."
             az storage account create \
               --name pfetfstate \
               --resource-group rg-terraform-state \
@@ -92,30 +205,28 @@ stages:
               --min-tls-version TLS1_2 \
               --allow-blob-public-access false
           else
-            echo "✅ Storage Account 'pfetfstate' déjà existant."
+            echo "✅ Storage Account existant."
           fi
 
-          # ── Container tfstate ─────────────────────────────────────
-          CONTAINER_EXISTS=$(az storage container exists \
-            --name tfstate \
-            --account-name pfetfstate \
+          # Container tfstate
+          CONTAINER=$(az storage container exists \
+            --name tfstate --account-name pfetfstate \
             --query exists -o tsv 2>/dev/null || echo "false")
-          if [ "$CONTAINER_EXISTS" = "false" ]; then
-            echo "🗂️  Création du container 'tfstate'..."
+          if [ "$CONTAINER" = "false" ]; then
+            echo "🗂️  Création du container tfstate..."
             az storage container create --name tfstate --account-name pfetfstate
           else
-            echo "✅ Container 'tfstate' déjà existant."
+            echo "✅ Container tfstate existant."
           fi
 
           echo ""
           echo "=========================================="
           echo "  ✅ Backend Terraform prêt !"
-          echo "  📍 Storage: pfetfstate / container: tfstate"
           echo "=========================================="
 
 # ── STAGE 1 : VALIDATE ──────────────────────────────────────
 - stage: Validate
-  displayName: "1 ✅ Validation du code"
+  displayName: "1 ✅ Validation"
   dependsOn: SetupBackend
   jobs:
   - job: Validate
@@ -172,9 +283,15 @@ stages:
 
           terraform plan \
             -var="subscription_id=$(SUBSCRIPTION_ID)" \
+            -var="prefix=${{ parameters.rg_name_prefix }}" \
             -var="environment=${{ parameters.environment }}" \
             -var="location=${{ parameters.location }}" \
-            -var="prefix=${{ parameters.prefix }}" \
+            -var="owner=${{ parameters.tag_owner }}" \
+            -var="tag_project=${{ parameters.tag_project }}" \
+            -var="tag_cost_center=${{ parameters.tag_cost_center }}" \
+            -var="tag_managed_by=${{ parameters.tag_managed_by }}" \
+            -var="tag_criticality=${{ parameters.tag_criticality }}" \
+            -var="tag_data_classification=${{ parameters.tag_data_classification }}" \
             -out=$(Build.ArtifactStagingDirectory)/tfplan
 
     - publish: $(Build.ArtifactStagingDirectory)/tfplan
@@ -221,12 +338,15 @@ stages:
                   $(Pipeline.Workspace)/tfplan-rg/tfplan
 
                 echo ""
-                echo "=========================================="
+                echo "============================================"
                 echo "  ✅ Resource Group créé avec succès !"
-                echo "  📤 Outputs sauvegardés dans le remote state"
-                echo "  🔑 Les pipelines VM / Storage / KeyVault"
-                echo "     peuvent maintenant être lancés."
-                echo "=========================================="
+                echo "  📍 Nom: ${{ parameters.rg_name_prefix }}-rg-${{ parameters.environment }}"
+                echo "  🌍 Région: ${{ parameters.location }}"
+                echo "  🏷️  Tags: Owner=${{ parameters.tag_owner }}"
+                echo "   Project=${{ parameters.tag_project }}"
+                echo "   CostCenter=${{ parameters.tag_cost_center }}"
+                echo "   Criticality=${{ parameters.tag_criticality }}"
+                echo "============================================"
                 terraform output
 
 # ── STAGE 4 : DESTROY ───────────────────────────────────────
@@ -268,6 +388,12 @@ stages:
                 terraform init
                 terraform destroy -auto-approve \
                   -var="subscription_id=$(SUBSCRIPTION_ID)" \
+                  -var="prefix=${{ parameters.rg_name_prefix }}" \
                   -var="environment=${{ parameters.environment }}" \
                   -var="location=${{ parameters.location }}" \
-                  -var="prefix=${{ parameters.prefix }}"
+                  -var="owner=${{ parameters.tag_owner }}" \
+                  -var="tag_project=${{ parameters.tag_project }}" \
+                  -var="tag_cost_center=${{ parameters.tag_cost_center }}" \
+                  -var="tag_managed_by=${{ parameters.tag_managed_by }}" \
+                  -var="tag_criticality=${{ parameters.tag_criticality }}" \
+                  -var="tag_data_classification=${{ parameters.tag_data_classification }}"

@@ -133,6 +133,13 @@ parameters:
     displayName: "🏷️ [Tags] Owner"
     type: string
     default: "MIC-SECOPS"
+    values:
+      - "MIC-SECOPS"
+      - "MIC-IDP"
+      - "NTT-DATA"
+      - "Mercedes-Benz"
+      - "Platform-Team"
+      - "DevOps-Team"
 
   - name: tag_project
     displayName: "🏷️ [Tags] Project"
@@ -151,11 +158,21 @@ parameters:
     displayName: "🏷️ [Tags] Criticality"
     type: string
     default: "Medium"
+    values:
+      - "Low"
+      - "Medium"
+      - "High"
+      - "Critical"
 
   - name: tag_data_classification
     displayName: "🏷️ [Tags] Data Classification"
     type: string
     default: "Internal"
+    values:
+      - "Public"
+      - "Internal"
+      - "Confidential"
+      - "Restricted"
 
 variables:
   TF_VERSION: "1.14.5"

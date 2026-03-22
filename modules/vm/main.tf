@@ -1,5 +1,5 @@
 # ---- Variables reçues depuis main.tf racine ----
-variable "virtual_machine_name" { type = string }
+variable "prefix"              { type = string }
 variable "environment"         { type = string }
 variable "location"            { type = string }
 variable "resource_group_name" { type = string }
@@ -57,7 +57,7 @@ locals {
 
 # ---- Réseau ----
 resource "azurerm_virtual_network" "vnet" {
-  name                = "${var.virtual_machine_name}-vnet-${var.environment}"
+  name                = "${var.prefix}-vnet-${var.environment}"
   address_space       = ["10.0.0.0/16"]
   location            = var.location
   resource_group_name = var.resource_group_name
@@ -65,7 +65,7 @@ resource "azurerm_virtual_network" "vnet" {
 }
 
 resource "azurerm_subnet" "subnet" {
-  name                 = "${var.virtual_machine_name}-subnet-${var.environment}"
+  name                 = "${var.prefix}-subnet-${var.environment}"
   resource_group_name  = var.resource_group_name
   virtual_network_name = azurerm_virtual_network.vnet.name
   address_prefixes     = ["10.0.1.0/24"]
@@ -74,7 +74,7 @@ resource "azurerm_subnet" "subnet" {
 # IP publique - une par VM
 resource "azurerm_public_ip" "public_ip" {
   count               = var.vm_count
-  name                = "${var.virtual_machine_name}-pip-${var.environment}-${count.index}"
+  name                = "${var.prefix}-pip-${var.environment}-${count.index}"
   location            = var.location
   resource_group_name = var.resource_group_name
   allocation_method   = "Static"
@@ -84,7 +84,7 @@ resource "azurerm_public_ip" "public_ip" {
 
 # NSG - règles selon l'OS choisi
 resource "azurerm_network_security_group" "nsg" {
-  name                = "${var.virtual_machine_name}-nsg-${var.environment}"
+  name                = "${var.prefix}-nsg-${var.environment}"
   location            = var.location
   resource_group_name = var.resource_group_name
 
@@ -120,7 +120,7 @@ resource "azurerm_network_security_group" "nsg" {
 # NIC - une par VM
 resource "azurerm_network_interface" "nic" {
   count               = var.vm_count
-  name                = "${var.virtual_machine_name}-nic-${var.environment}-${count.index}"
+  name                = "${var.prefix}-nic-${var.environment}-${count.index}"
   location            = var.location
   resource_group_name = var.resource_group_name
 
@@ -142,18 +142,18 @@ resource "azurerm_network_interface_security_group_association" "nic_nsg" {
 # ---- VM Windows (créée seulement si vm_os_type = windows) ----
 resource "azurerm_windows_virtual_machine" "vm" {
   count               = var.vm_os_type == "windows" ? var.vm_count : 0
-  name                = var.vm_count > 1 ? "${var.virtual_machine_name}-${count.index}" : var.virtual_machine_name
+  name                = "${var.prefix}-vm-win-${var.environment}-${count.index}"
   resource_group_name = var.resource_group_name
   location            = var.location
   size                = var.vm_size
   admin_username      = var.vm_admin_username
   admin_password      = var.vm_admin_password
-  computer_name       = substr(var.vm_count > 1 ? "${var.virtual_machine_name}${count.index}" : var.virtual_machine_name, 0, 15)
+  computer_name       = "${var.prefix}vm${count.index}"
 
   network_interface_ids = [azurerm_network_interface.nic[count.index].id]
 
   os_disk {
-    name                 = "${var.virtual_machine_name}-osdisk-${var.environment}-${count.index}"
+    name                 = "${var.prefix}-osdisk-${var.environment}-${count.index}"
     caching              = "ReadWrite"
     storage_account_type = var.vm_disk_type
   }
@@ -171,7 +171,7 @@ resource "azurerm_windows_virtual_machine" "vm" {
 # ---- VM Linux (créée seulement si vm_os_type = linux) ----
 resource "azurerm_linux_virtual_machine" "vm" {
   count               = var.vm_os_type == "linux" ? var.vm_count : 0
-  name                = var.vm_count > 1 ? "${var.virtual_machine_name}-${count.index}" : var.virtual_machine_name
+  name                = "${var.prefix}-vm-linux-${var.environment}-${count.index}"
   resource_group_name = var.resource_group_name
   location            = var.location
   size                = var.vm_size
@@ -182,7 +182,7 @@ resource "azurerm_linux_virtual_machine" "vm" {
   network_interface_ids = [azurerm_network_interface.nic[count.index].id]
 
   os_disk {
-    name                 = "${var.virtual_machine_name}-osdisk-${var.environment}-${count.index}"
+    name                 = "${var.prefix}-osdisk-${var.environment}-${count.index}"
     caching              = "ReadWrite"
     storage_account_type = var.vm_disk_type
   }

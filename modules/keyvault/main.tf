@@ -1,8 +1,9 @@
 # ---- Variables reçues depuis main.tf racine ----
-variable "key_vault_name"            { type = string }
+variable "prefix"                    { type = string }
 variable "environment"               { type = string }
 variable "location"                  { type = string }
 variable "resource_group_name"       { type = string }
+variable "suffix"                    { type = string }
 variable "tenant_id"                 { type = string }
 variable "object_id"                 { type = string }
 variable "keyvault_sku"              { type = string }
@@ -16,7 +17,7 @@ variable "vm_admin_password" {
 }
 
 resource "azurerm_key_vault" "kv" {
-  name                        = var.key_vault_name
+  name                        = "${var.prefix}-kv-${var.suffix}"
   location                    = var.location
   resource_group_name         = var.resource_group_name
   tenant_id                   = var.tenant_id

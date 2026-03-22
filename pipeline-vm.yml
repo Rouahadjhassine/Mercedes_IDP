@@ -23,18 +23,13 @@ parameters:
   # (doit correspondre au Resource Group créé par Pipeline #1)
   # ═══════════════════════════════════════════════════════════
 
-  - name: resource_group_name
-    displayName: "📁 [Resource Group] Nom exact du RG cible"
+  - name: rg_prefix
+    displayName: "📁 [Resource Group] Préfixe du RG cible"
     type: string
-    default: "my-resource-group"
-
-  - name: virtual_machine_name
-    displayName: "💻 [Basics] Nom exact de la VM"
-    type: string
-    default: "my-vm"
+    default: "mic"
 
   - name: rg_environment
-    displayName: "📁 [Resource Group] Environnement du RG cible (info)"
+    displayName: "📁 [Resource Group] Environnement du RG cible"
     type: string
     default: "dev"
     values:
@@ -182,13 +177,13 @@ stages:
     - checkout: self
 
     - task: AzureCLI@2
-      displayName: "✅ Vérifier que le RG '${{ parameters.resource_group_name }}' existe"
+      displayName: "✅ Vérifier que le RG '${{ parameters.rg_prefix }}-rg-${{ parameters.rg_environment }}' existe"
       inputs:
         azureSubscription: "MIC-IDP"
         scriptType: "bash"
         scriptLocation: "inlineScript"
         inlineScript: |
-          RG_NAME="${{ parameters.resource_group_name }}"
+          RG_NAME="${{ parameters.rg_prefix }}-rg-${{ parameters.rg_environment }}"
           RG_EXISTS=$(az group exists --name "$RG_NAME")
 
           if [ "$RG_EXISTS" = "true" ]; then
@@ -268,8 +263,6 @@ stages:
 
           terraform plan \
             -var="subscription_id=$(SUBSCRIPTION_ID)" \
-            -var="resource_group_name=${{ parameters.resource_group_name }}" \
-            -var="virtual_machine_name=${{ parameters.virtual_machine_name }}" \
             -var="vm_count=${{ parameters.vm_count }}" \
             -var="vm_size=${{ parameters.vm_size }}" \
             -var="vm_os_type=${{ parameters.vm_os_type }}" \
@@ -324,8 +317,7 @@ stages:
                 echo ""
                 echo "============================================"
                 echo "  ✅ VM créée avec succès !"
-                echo "  📁 RG: ${{ parameters.resource_group_name }}"
-                echo "  💻 Nom VM: ${{ parameters.virtual_machine_name }}"
+                echo "  📁 RG: ${{ parameters.rg_prefix }}-rg-${{ parameters.rg_environment }}"
                 echo "  🌍 Région: ${{ parameters.location }}"
                 echo "  💻 OS: ${{ parameters.vm_os_type }} – ${{ parameters.vm_os_image }}"
                 echo "  📐 Taille: ${{ parameters.vm_size }} x ${{ parameters.vm_count }}"
@@ -372,8 +364,6 @@ stages:
                 terraform init
                 terraform destroy -auto-approve \
                   -var="subscription_id=$(SUBSCRIPTION_ID)" \
-                  -var="resource_group_name=${{ parameters.resource_group_name }}" \
-                  -var="virtual_machine_name=${{ parameters.virtual_machine_name }}" \
                   -var="vm_count=${{ parameters.vm_count }}" \
                   -var="vm_size=${{ parameters.vm_size }}" \
                   -var="vm_os_type=${{ parameters.vm_os_type }}" \

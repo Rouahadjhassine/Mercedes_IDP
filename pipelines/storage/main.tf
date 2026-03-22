@@ -12,13 +12,21 @@ data "terraform_remote_state" "rg" {
   }
 }
 
+# ---- Suffixe aléatoire pour le nom du Storage Account ----
+resource "random_string" "suffix" {
+  length  = 6
+  special = false
+  upper   = false
+}
+
 # ---- Module Storage (réutilise le module existant) ----
 module "storage" {
   source              = "../../modules/storage"
-  storage_account_name = var.storage_account_name
+  prefix              = data.terraform_remote_state.rg.outputs.prefix
   environment         = data.terraform_remote_state.rg.outputs.environment
   location            = data.terraform_remote_state.rg.outputs.resource_group_location
   resource_group_name = data.terraform_remote_state.rg.outputs.resource_group_name
+  suffix              = random_string.suffix.result
 
   storage_account_tier     = var.storage_account_tier
   storage_replication_type = var.storage_replication_type

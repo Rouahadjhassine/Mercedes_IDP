@@ -30,10 +30,10 @@ parameters:
       - "MIC-SECOPS-PROD"
 
   # ── NOM DU RESOURCE GROUP ─────────────────────────────────
-  - name: resource_group_name
-    displayName: "🏷️ Nom exact du Resource Group"
+  - name: rg_name_prefix
+    displayName: "🏷️ Préfixe du nom (format: PREFIX-rg-ENV)"
     type: string
-    default: "my-resource-group"
+    default: "mic"
 
   # ── RÉGION ────────────────────────────────────────────────
   - name: location
@@ -239,7 +239,7 @@ stages:
 
           terraform plan \
             -var="subscription_id=$(SUBSCRIPTION_ID)" \
-            -var="resource_group_name=${{ parameters.resource_group_name }}" \
+            -var="prefix=${{ parameters.rg_name_prefix }}" \
             -var="environment=${{ parameters.environment }}" \
             -var="location=${{ parameters.location }}" \
             -var="owner=${{ parameters.tag_owner }}" \
@@ -296,7 +296,7 @@ stages:
                 echo ""
                 echo "============================================"
                 echo "  ✅ Resource Group créé avec succès !"
-                echo "  📍 Nom: ${{ parameters.resource_group_name }}"
+                echo "  📍 Nom: ${{ parameters.rg_name_prefix }}-rg-${{ parameters.environment }}"
                 echo "  🌍 Région: ${{ parameters.location }}"
                 echo "  🏷️  Tags: Owner=${{ parameters.tag_owner }}"
                 echo "   Project=${{ parameters.tag_project }}"
@@ -344,7 +344,7 @@ stages:
                 terraform init
                 terraform destroy -auto-approve \
                   -var="subscription_id=$(SUBSCRIPTION_ID)" \
-                  -var="resource_group_name=${{ parameters.resource_group_name }}" \
+                  -var="prefix=${{ parameters.rg_name_prefix }}" \
                   -var="environment=${{ parameters.environment }}" \
                   -var="location=${{ parameters.location }}" \
                   -var="owner=${{ parameters.tag_owner }}" \

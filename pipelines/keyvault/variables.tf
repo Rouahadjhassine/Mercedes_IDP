@@ -3,14 +3,10 @@ variable "subscription_id" {
   type        = string
 }
 
-variable "resource_group_name" {
-  description = "Nom exact du resource group"
+variable "prefix" {
+  description = "Préfixe pour nommer les ressources"
   type        = string
-}
-
-variable "key_vault_name" {
-  description = "Nom exact du key vault"
-  type        = string
+  default     = "mic"
 }
 
 variable "environment" {

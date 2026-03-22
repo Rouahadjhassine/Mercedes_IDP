@@ -22,18 +22,13 @@ parameters:
   # SECTION 1 – RESOURCE GROUP CIBLE
   # ═══════════════════════════════════════════════════════════
 
-  - name: resource_group_name
-    displayName: "📁 [Resource Group] Nom exact du RG cible"
+  - name: rg_prefix
+    displayName: "📁 [Resource Group] Préfixe du RG cible"
     type: string
-    default: "my-resource-group"
-
-  - name: key_vault_name
-    displayName: "🔐 [Basics] Nom exact du Key Vault"
-    type: string
-    default: "my-keyvault123"
+    default: "mic"
 
   - name: rg_environment
-    displayName: "📁 [Resource Group] Environnement du RG cible (info)"
+    displayName: "📁 [Resource Group] Environnement du RG cible"
     type: string
     default: "dev"
     values:
@@ -189,7 +184,7 @@ stages:
         scriptType: "bash"
         scriptLocation: "inlineScript"
         inlineScript: |
-          RG_NAME="${{ parameters.resource_group_name }}"
+          RG_NAME="${{ parameters.rg_prefix }}-rg-${{ parameters.rg_environment }}"
 
           # Vérifier Resource Group (obligatoire)
           RG_EXISTS=$(az group exists --name "$RG_NAME")
@@ -280,8 +275,6 @@ stages:
 
           terraform plan \
             -var="subscription_id=$(SUBSCRIPTION_ID)" \
-            -var="resource_group_name=${{ parameters.resource_group_name }}" \
-            -var="key_vault_name=${{ parameters.key_vault_name }}" \
             -var="keyvault_sku=${{ parameters.keyvault_sku }}" \
             -var="keyvault_purge_protection=$([ '${{ parameters.keyvault_purge_protection }}' = 'True' ] && echo true || echo false)" \
             -var="keyvault_disk_encryption=$([ '${{ parameters.keyvault_disk_encryption }}' = 'True' ] && echo true || echo false)" \
@@ -336,8 +329,7 @@ stages:
                 echo ""
                 echo "============================================"
                 echo "  ✅ Key Vault créé avec succès !"
-                echo "  📁 RG: ${{ parameters.resource_group_name }}"
-                echo "  🔐 Nom du KV: ${{ parameters.key_vault_name }}"
+                echo "  📁 RG: ${{ parameters.rg_prefix }}-rg-${{ parameters.rg_environment }}"
                 echo "  🌍 Région: ${{ parameters.location }}"
                 echo "  💎 SKU: ${{ parameters.keyvault_sku }}"
                 echo "  🔒 Purge protection: ${{ parameters.keyvault_purge_protection }}"
@@ -391,8 +383,6 @@ stages:
                 terraform init
                 terraform destroy -auto-approve \
                   -var="subscription_id=$(SUBSCRIPTION_ID)" \
-                  -var="resource_group_name=${{ parameters.resource_group_name }}" \
-                  -var="key_vault_name=${{ parameters.key_vault_name }}" \
                   -var="keyvault_sku=${{ parameters.keyvault_sku }}" \
                   -var="keyvault_purge_protection=$([ '${{ parameters.keyvault_purge_protection }}' = 'True' ] && echo true || echo false)" \
                   -var="keyvault_disk_encryption=$([ '${{ parameters.keyvault_disk_encryption }}' = 'True' ] && echo true || echo false)" \

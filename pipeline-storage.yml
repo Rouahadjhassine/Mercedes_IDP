@@ -26,14 +26,6 @@ parameters:
     displayName: "📁 [Resource Group] Préfixe du RG cible"
     type: string
     default: "mic"
-    values:
-      - "mic"
-      - "pfe"
-      - "idp"
-      - "mic-secops"
-      - "mic-idp"
-      - "ntt"
-      - "mb"
 
   - name: rg_environment
     displayName: "📁 [Resource Group] Environnement du RG cible"
@@ -141,46 +133,21 @@ parameters:
     displayName: "🏷️ [Tags] Owner"
     type: string
     default: "MIC-SECOPS"
-    values:
-      - "MIC-SECOPS"
-      - "MIC-IDP"
-      - "NTT-DATA"
-      - "Mercedes-Benz"
-      - "Platform-Team"
-      - "DevOps-Team"
 
   - name: tag_project
     displayName: "🏷️ [Tags] Project"
     type: string
     default: "IDP-PFE"
-    values:
-      - "IDP-PFE"
-      - "Mail-API"
-      - "PKI"
-      - "DNS"
-      - "TokenMaster"
-      - "SIEM"
-      - "Platform"
 
   - name: tag_criticality
     displayName: "🏷️ [Tags] Criticality"
     type: string
     default: "Medium"
-    values:
-      - "Low"
-      - "Medium"
-      - "High"
-      - "Critical"
 
   - name: tag_data_classification
     displayName: "🏷️ [Tags] Data Classification"
     type: string
     default: "Internal"
-    values:
-      - "Public"
-      - "Internal"
-      - "Confidential"
-      - "Restricted"
 
 variables:
   TF_VERSION: "1.14.5"

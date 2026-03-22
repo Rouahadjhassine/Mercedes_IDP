@@ -34,14 +34,6 @@ parameters:
     displayName: "🏷️ Préfixe du nom (format: PREFIX-rg-ENV)"
     type: string
     default: "mic"
-    values:
-      - "mic"
-      - "pfe"
-      - "idp"
-      - "mic-secops"
-      - "mic-idp"
-      - "ntt"
-      - "mb"
 
   # ── RÉGION ────────────────────────────────────────────────
   - name: location
@@ -95,67 +87,31 @@ parameters:
     displayName: "🏷️ Tag – Owner (équipe propriétaire)"
     type: string
     default: "MIC-SECOPS"
-    values:
-      - "MIC-SECOPS"
-      - "MIC-IDP"
-      - "NTT-DATA"
-      - "Mercedes-Benz"
-      - "Platform-Team"
-      - "DevOps-Team"
 
   - name: tag_project
     displayName: "🏷️ Tag – Project"
     type: string
     default: "IDP-PFE"
-    values:
-      - "IDP-PFE"
-      - "Mail-API"
-      - "PKI"
-      - "DNS"
-      - "TokenMaster"
-      - "SIEM"
-      - "Platform"
 
   - name: tag_cost_center
     displayName: "🏷️ Tag – Cost Center"
     type: string
     default: "MIC-001"
-    values:
-      - "MIC-001"
-      - "MIC-002"
-      - "SECOPS-100"
-      - "INFRA-200"
-      - "RD-300"
 
   - name: tag_managed_by
     displayName: "🏷️ Tag – Managed By"
     type: string
     default: "Terraform"
-    values:
-      - "Terraform"
-      - "OpenTofu"
-      - "Bicep"
-      - "Manual"
 
   - name: tag_criticality
     displayName: "🏷️ Tag – Criticality"
     type: string
     default: "Medium"
-    values:
-      - "Low"
-      - "Medium"
-      - "High"
-      - "Critical"
 
   - name: tag_data_classification
     displayName: "🏷️ Tag – Data Classification"
     type: string
     default: "Internal"
-    values:
-      - "Public"
-      - "Internal"
-      - "Confidential"
-      - "Restricted"
 
 variables:
   TF_VERSION: "1.14.5"

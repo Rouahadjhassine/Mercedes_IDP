@@ -3,10 +3,9 @@ variable "subscription_id" {
   type        = string
 }
 
-variable "prefix" {
-  description = "Préfixe pour nommer le Resource Group (ex: mic-rg-dev)"
+variable "resource_group_name" {
+  description = "Nom exact du Resource Group"
   type        = string
-  default     = "mic"
 }
 
 variable "environment" {

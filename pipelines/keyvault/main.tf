@@ -27,21 +27,13 @@ data "terraform_remote_state" "storage" {
 # ---- Infos du service principal courant ----
 data "azurerm_client_config" "current" {}
 
-# ---- Suffixe aléatoire pour le nom du Key Vault ----
-resource "random_string" "suffix" {
-  length  = 6
-  special = false
-  upper   = false
-}
-
 # ---- Module KeyVault (réutilise le module existant) ----
 module "keyvault" {
   source              = "../../modules/keyvault"
-  prefix              = data.terraform_remote_state.rg.outputs.prefix
+  key_vault_name      = var.key_vault_name
   environment         = data.terraform_remote_state.rg.outputs.environment
   location            = data.terraform_remote_state.rg.outputs.resource_group_location
   resource_group_name = data.terraform_remote_state.rg.outputs.resource_group_name
-  suffix              = random_string.suffix.result
   tenant_id           = data.azurerm_client_config.current.tenant_id
   object_id           = data.azurerm_client_config.current.object_id
 

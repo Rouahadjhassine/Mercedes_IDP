@@ -15,7 +15,7 @@ data "terraform_remote_state" "rg" {
 # ---- Module VM (réutilise le module existant) ----
 module "vm" {
   source              = "../../modules/vm"
-  prefix              = data.terraform_remote_state.rg.outputs.prefix
+  virtual_machine_name = var.virtual_machine_name
   environment         = data.terraform_remote_state.rg.outputs.environment
   location            = data.terraform_remote_state.rg.outputs.resource_group_location
   resource_group_name = data.terraform_remote_state.rg.outputs.resource_group_name

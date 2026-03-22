@@ -22,13 +22,18 @@ parameters:
   # SECTION 1 – RESOURCE GROUP CIBLE
   # ═══════════════════════════════════════════════════════════
 
-  - name: rg_prefix
-    displayName: "📁 [Resource Group] Préfixe du RG cible"
+  - name: resource_group_name
+    displayName: "📁 [Resource Group] Nom exact du RG cible"
     type: string
-    default: "mic"
+    default: "my-resource-group"
+
+  - name: storage_account_name
+    displayName: "📦 [Storage] Nom exact du Storage Account"
+    type: string
+    default: "mystorageaccount123"
 
   - name: rg_environment
-    displayName: "📁 [Resource Group] Environnement du RG cible"
+    displayName: "📁 [Resource Group] Environnement du RG cible (pour info)"
     type: string
     default: "dev"
     values:
@@ -173,7 +178,7 @@ stages:
         scriptType: "bash"
         scriptLocation: "inlineScript"
         inlineScript: |
-          RG_NAME="${{ parameters.rg_prefix }}-rg-${{ parameters.rg_environment }}"
+          RG_NAME="${{ parameters.resource_group_name }}"
           RG_EXISTS=$(az group exists --name "$RG_NAME")
 
           if [ "$RG_EXISTS" = "true" ]; then
@@ -252,6 +257,8 @@ stages:
 
           terraform plan \
             -var="subscription_id=$(SUBSCRIPTION_ID)" \
+            -var="resource_group_name=${{ parameters.resource_group_name }}" \
+            -var="storage_account_name=${{ parameters.storage_account_name }}" \
             -var="storage_account_tier=${{ parameters.storage_account_tier }}" \
             -var="storage_replication_type=${{ parameters.storage_replication_type }}" \
             -var="storage_access_tier=${{ parameters.storage_access_tier }}" \
@@ -305,7 +312,8 @@ stages:
                 echo ""
                 echo "============================================"
                 echo "  ✅ Storage Account créé avec succès !"
-                echo "  📁 RG: ${{ parameters.rg_prefix }}-rg-${{ parameters.rg_environment }}"
+                echo "  📁 RG: ${{ parameters.resource_group_name }}"
+                echo "  📦 Nom du Storage: ${{ parameters.storage_account_name }}"
                 echo "  🌍 Région: ${{ parameters.location }}"
                 echo "  📦 Kind: ${{ parameters.storage_kind }}"
                 echo "  💲 Tier: ${{ parameters.storage_account_tier }}"
@@ -354,6 +362,8 @@ stages:
                 terraform init
                 terraform destroy -auto-approve \
                   -var="subscription_id=$(SUBSCRIPTION_ID)" \
+                  -var="resource_group_name=${{ parameters.resource_group_name }}" \
+                  -var="storage_account_name=${{ parameters.storage_account_name }}" \
                   -var="storage_account_tier=${{ parameters.storage_account_tier }}" \
                   -var="storage_replication_type=${{ parameters.storage_replication_type }}" \
                   -var="storage_access_tier=${{ parameters.storage_access_tier }}" \

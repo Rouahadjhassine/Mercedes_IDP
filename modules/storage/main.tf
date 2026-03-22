@@ -1,9 +1,8 @@
 # ---- Variables reçues depuis main.tf racine ----
-variable "prefix"                   { type = string }
+variable "storage_account_name"     { type = string }
 variable "environment"              { type = string }
 variable "location"                 { type = string }
 variable "resource_group_name"      { type = string }
-variable "suffix"                   { type = string }
 variable "storage_account_tier"     { type = string }
 variable "storage_replication_type" { type = string }
 variable "storage_access_tier"      { type = string }
@@ -11,7 +10,7 @@ variable "storage_kind"             { type = string }
 variable "storage_retention_days"   { type = number }
 
 resource "azurerm_storage_account" "storage" {
-  name                            = "${var.prefix}st${var.suffix}"
+  name                            = var.storage_account_name
   resource_group_name             = var.resource_group_name
   location                        = var.location
   account_tier                    = var.storage_account_tier

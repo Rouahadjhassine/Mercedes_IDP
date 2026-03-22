@@ -92,6 +92,14 @@ parameters:
     displayName: "🏷️ Tag – Project"
     type: string
     default: "IDP-PFE"
+    values:
+      - "IDP-PFE"
+      - "Mail-API"
+      - "PKI"
+      - "DNS"
+      - "TokenMaster"
+      - "SIEM"
+      - "Platform"
 
   - name: tag_cost_center
     displayName: "🏷️ Tag – Cost Center"

@@ -148,6 +148,14 @@ parameters:
     displayName: "🏷️ [Tags] Project"
     type: string
     default: "IDP-PFE"
+    values:
+      - "IDP-PFE"
+      - "Mail-API"
+      - "PKI"
+      - "DNS"
+      - "TokenMaster"
+      - "SIEM"
+      - "Platform"
 
   - name: tag_criticality
     displayName: "🏷️ [Tags] Criticality"

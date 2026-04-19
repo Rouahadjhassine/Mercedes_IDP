@@ -11,7 +11,7 @@ parameters:
   - name: action
     displayName: "⚡ Action"
     type: string
-    default: plan
+    default: apply
     values: [plan, apply, destroy]
 
   - name: rg_prefix

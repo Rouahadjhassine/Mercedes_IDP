@@ -4,7 +4,7 @@ parameters:
   - name: action
     displayName: "Action Terraform"
     type: string
-    default: plan
+    default: apply
     values:
       - plan
       - apply

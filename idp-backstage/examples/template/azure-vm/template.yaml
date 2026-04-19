@@ -1,0 +1,337 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: azure-virtual-machine
+  title: "💻 Azure Virtual Machine"
+  description: >
+    Crée une Machine Virtuelle Azure (Windows ou Linux).
+    ⚠️ Prérequis : un Resource Group doit exister au préalable.
+    Sélectionnez-en un dans la liste ou saisissez le préfixe/environnement.
+  tags:
+    - azure
+    - terraform
+    - virtual-machine
+    - compute
+    - depends-on-rg
+  links:
+    - url: https://portal.azure.com/#create/Microsoft.VirtualMachine-ARM
+      title: Voir sur Azure Portal
+      icon: web
+spec:
+  owner: user:guest
+  type: azure-infrastructure
+
+  parameters:
+
+    # ── STEP 1 : INFOS DU COMPOSANT ──────────────────────────
+    - title: "📋 Informations du composant"
+      required:
+        - owner
+      properties:
+        description:
+          title: Description
+          type: string
+          description: "Rôle de cette VM (ex: Serveur web de développement)"
+        owner:
+          title: Équipe propriétaire
+          type: string
+          ui:field: OwnerPicker
+          ui:options:
+            catalogFilter:
+              kind: Group
+
+    # ── STEP 2 : RESOURCE GROUP CIBLE ────────────────────────
+    - title: "📁 Resource Group cible"
+      description: >
+        Sélectionnez un Resource Group existant dans votre catalogue,
+        ou saisissez manuellement le préfixe et l'environnement.
+      required:
+        - rg_prefix
+        - rg_environment
+      properties:
+        existing_rg:
+          title: "🔍 Sélectionner un Resource Group existant (optionnel)"
+          type: string
+          description: "Parcourez les Resource Groups enregistrés dans Backstage"
+          ui:field: EntityPicker
+          ui:options:
+            catalogFilter:
+              - kind: Component
+                spec.type: azure-resource-group
+            defaultKind: Component
+            defaultNamespace: default
+        rg_prefix:
+          title: "📁 Préfixe du Resource Group"
+          type: string
+          description: "Le préfixe utilisé lors de la création du RG (ex: mic)"
+          default: "mic"
+        rg_environment:
+          title: "🌐 Environnement du Resource Group"
+          type: string
+          default: dev
+          enum:
+            - dev
+            - test
+            - staging
+            - prod
+            - sandbox
+            - poc
+
+    # ── STEP 3 : BASICS ───────────────────────────────────────
+    - title: "⚙️ Basics — Instance Details"
+      required:
+        - location
+        - vm_count
+      properties:
+        location:
+          title: "🌍 Région Azure"
+          type: string
+          description: "Doit être la même région que votre Resource Group"
+          default: "West Europe"
+          enum:
+            - "West Europe"
+            - "North Europe"
+            - "France Central"
+            - "France South"
+            - "Germany West Central"
+            - "Switzerland North"
+            - "UK South"
+            - "UK West"
+            - "Sweden Central"
+            - "East US"
+            - "East US 2"
+            - "West US 2"
+            - "Canada Central"
+            - "Southeast Asia"
+            - "Australia East"
+            - "Japan East"
+        vm_count:
+          title: "🔢 Nombre d'instances"
+          type: number
+          default: 1
+          enum:
+            - 1
+            - 2
+            - 3
+            - 4
+            - 5
+
+    # ── STEP 4 : IMAGE ────────────────────────────────────────
+    - title: "🖼️ Image — Système d'exploitation"
+      required:
+        - vm_os_type
+        - vm_os_image
+      properties:
+        vm_os_type:
+          title: "💻 Famille OS"
+          type: string
+          default: "windows"
+          enum:
+            - "windows"
+            - "linux"
+          enumNames:
+            - "🪟 Windows"
+            - "🐧 Linux"
+        vm_os_image:
+          title: "🖼️ Image OS"
+          type: string
+          default: "WindowsServer2022"
+          enum:
+            - "WindowsServer2022"
+            - "WindowsServer2019"
+            - "WindowsServer2016"
+            - "UbuntuServer2204"
+            - "UbuntuServer2004"
+            - "RedHat9"
+          enumNames:
+            - "Windows Server 2022 Datacenter"
+            - "Windows Server 2019 Datacenter"
+            - "Windows Server 2016 Datacenter"
+            - "Ubuntu Server 22.04 LTS"
+            - "Ubuntu Server 20.04 LTS"
+            - "Red Hat Enterprise Linux 9"
+
+    # ── STEP 5 : SIZE ─────────────────────────────────────────
+    - title: "📐 Size — Taille de la VM"
+      required:
+        - vm_size
+      properties:
+        vm_size:
+          title: "📐 Taille de la VM"
+          type: string
+          default: "Standard_B2s"
+          enum:
+            - "Standard_B1s"
+            - "Standard_B2s"
+            - "Standard_B4ms"
+            - "Standard_D2s_v3"
+            - "Standard_D4s_v3"
+            - "Standard_D8s_v3"
+            - "Standard_E2s_v3"
+            - "Standard_E4s_v3"
+            - "Standard_F2s_v2"
+            - "Standard_F4s_v2"
+          enumNames:
+            - "B1s — 1 vCPU, 1 GB RAM (dev léger)"
+            - "B2s — 2 vCPU, 4 GB RAM (dev/test)"
+            - "B4ms — 4 vCPU, 16 GB RAM (dev standard)"
+            - "D2s_v3 — 2 vCPU, 8 GB RAM (usage général)"
+            - "D4s_v3 — 4 vCPU, 16 GB RAM (usage général)"
+            - "D8s_v3 — 8 vCPU, 32 GB RAM (usage général)"
+            - "E2s_v3 — 2 vCPU, 16 GB RAM (mémoire optimisée)"
+            - "E4s_v3 — 4 vCPU, 32 GB RAM (mémoire optimisée)"
+            - "F2s_v2 — 2 vCPU, 4 GB RAM (calcul optimisé)"
+            - "F4s_v2 — 4 vCPU, 8 GB RAM (calcul optimisé)"
+
+    # ── STEP 6 : DISKS ────────────────────────────────────────
+    - title: "💾 Disks — Stockage OS"
+      properties:
+        vm_disk_type:
+          title: "💾 Type de disque OS"
+          type: string
+          default: "Standard_LRS"
+          enum:
+            - "Standard_LRS"
+            - "StandardSSD_LRS"
+            - "Premium_LRS"
+            - "UltraSSD_LRS"
+          enumNames:
+            - "Standard HDD — Moins cher (dev/test)"
+            - "Standard SSD — Équilibré"
+            - "Premium SSD — Hautes performances (prod recommandé)"
+            - "Ultra SSD — Performances extrêmes"
+
+    # ── STEP 7 : TAGS ─────────────────────────────────────────
+    - title: "🏷️ Tags Azure"
+      properties:
+        tag_owner:
+          title: Owner
+          type: string
+          default: "MIC-SECOPS"
+          enum:
+            - "MIC-SECOPS"
+            - "MIC-IDP"
+            - "NTT-DATA"
+            - "Mercedes-Benz"
+            - "Platform-Team"
+            - "DevOps-Team"
+        tag_project:
+          title: Project
+          type: string
+          default: "IDP-PFE"
+          enum:
+            - "IDP-PFE"
+            - "Mail-API"
+            - "PKI"
+            - "DNS"
+            - "TokenMaster"
+            - "SIEM"
+            - "Platform"
+        tag_criticality:
+          title: Criticality
+          type: string
+          default: "Medium"
+          enum:
+            - "Low"
+            - "Medium"
+            - "High"
+            - "Critical"
+
+    # ── STEP 8 : DESTINATION ADO ──────────────────────────────
+    - title: "🚀 Destination Azure DevOps"
+      required:
+        - ado_org
+        - ado_project
+        - repo_name
+      properties:
+        ado_org:
+          title: Organisation Azure DevOps
+          type: string
+          default: "ymi0337"
+        ado_project:
+          title: Projet Azure DevOps
+          type: string
+          default: "IDP-MIC"
+        repo_name:
+          title: Nom du Repository (nouveau)
+          type: string
+          default: "infra-virtual-machine"
+
+  steps:
+
+    - id: fetch-base
+      name: "📦 Génération du pipeline"
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          component_id: ${{ parameters.rg_prefix }}-vm-${{ parameters.rg_environment }}
+          description: ${{ parameters.description }}
+          owner: ${{ parameters.owner }}
+          existing_rg: ${{ parameters.existing_rg }}
+          rg_prefix: ${{ parameters.rg_prefix }}
+          rg_environment: ${{ parameters.rg_environment }}
+          location: ${{ parameters.location }}
+          vm_count: ${{ parameters.vm_count }}
+          vm_os_type: ${{ parameters.vm_os_type }}
+          vm_os_image: ${{ parameters.vm_os_image }}
+          vm_size: ${{ parameters.vm_size }}
+          vm_disk_type: ${{ parameters.vm_disk_type }}
+          tag_owner: ${{ parameters.tag_owner }}
+          tag_project: ${{ parameters.tag_project }}
+          tag_criticality: ${{ parameters.tag_criticality }}
+          ado_project: ${{ parameters.ado_project }}
+          repo_name: ${{ parameters.repo_name }}
+        copyWithoutRender:
+          - "pipeline-*.yml"
+
+    - id: publish
+      name: "📤 Publication sur Azure DevOps"
+      action: publish:azure
+      input:
+        repoUrl: "dev.azure.com?organization=${{ parameters.ado_org }}&project=${{ parameters.ado_project }}&repo=${{ parameters.repo_name }}"
+        description: "💻 Virtual Machine – dans ${{ parameters.rg_prefix }}-rg-${{ parameters.rg_environment }}"
+        defaultBranch: main
+
+    - id: register
+      name: "📝 Enregistrement dans le Catalog"
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: "/catalog-info.yaml"
+
+    - id: run-pipeline
+      name: "⚙️ Lancement automatique du Pipeline (Zero-Click) !"
+      action: ado:pipeline:run
+      input:
+        organization: ${{ parameters.ado_org }}
+        project: ${{ parameters.ado_project }}
+        repo: ${{ parameters.repo_name }}
+        pipelineName: pipeline-vm
+        yamlPath: pipeline-vm.yml
+        templateParameters:
+          action: apply
+          rg_prefix: ${{ parameters.rg_prefix }}
+          rg_environment: ${{ parameters.rg_environment }}
+          location: ${{ parameters.location }}
+          vm_count: ${{ parameters.vm_count }}
+          vm_os_type: ${{ parameters.vm_os_type }}
+          vm_os_image: ${{ parameters.vm_os_image }}
+          vm_size: ${{ parameters.vm_size }}
+          vm_disk_type: ${{ parameters.vm_disk_type }}
+
+  output:
+    links:
+      - title: "📁 Repository Azure DevOps"
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: "🔍 Voir dans le Catalog Backstage"
+        icon: catalog
+        entityRef: ${{ steps['register'].output.entityRef }}
+      - title: "▶️ Voir l'exécution du Pipeline"
+        url: ${{ steps['run-pipeline'].output.pipelineRunUrl }}
+    text:
+      - title: "✅ Déploiement en cours"
+        content: |
+          ### Votre infrastructure est en train d'être créée !
+          
+          Backstage a déclenché le pipeline d'infrastructure (`${{ steps['run-pipeline'].output.pipelineId }}`) automatiquement pour vous.

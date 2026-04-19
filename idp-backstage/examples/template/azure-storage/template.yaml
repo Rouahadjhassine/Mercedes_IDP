@@ -1,0 +1,332 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: azure-storage-account
+  title: "💾 Azure Storage Account"
+  description: >
+    Crée un Azure Storage Account (Blob, File, Queue, Table).
+    ⚠️ Prérequis : un Resource Group doit exister au préalable.
+    Choisissez-en un dans la liste ou saisissez le préfixe/environnement manuellement.
+  tags:
+    - azure
+    - terraform
+    - storage
+    - depends-on-rg
+  links:
+    - url: https://portal.azure.com/#create/Microsoft.StorageAccount-ARM
+      title: Voir sur Azure Portal
+      icon: web
+spec:
+  owner: user:guest
+  type: azure-infrastructure
+
+  parameters:
+
+    # ── STEP 1 : INFOS DU COMPOSANT ──────────────────────────
+    - title: "📋 Informations du composant"
+      required:
+        - owner
+      properties:
+        description:
+          title: Description
+          type: string
+          description: "Objectif de ce Storage Account"
+        owner:
+          title: Équipe propriétaire
+          type: string
+          ui:field: OwnerPicker
+          ui:options:
+            catalogFilter:
+              kind: Group
+
+    # ── STEP 2 : RESOURCE GROUP CIBLE ────────────────────────
+    - title: "📁 Resource Group cible"
+      description: >
+        Sélectionnez un Resource Group existant dans votre catalogue,
+        ou saisissez manuellement le préfixe et l'environnement.
+      required:
+        - rg_prefix
+        - rg_environment
+      properties:
+        existing_rg:
+          title: "🔍 Sélectionner un Resource Group existant (optionnel)"
+          type: string
+          description: "Parcourez les Resource Groups déjà enregistrés dans Backstage"
+          ui:field: EntityPicker
+          ui:options:
+            catalogFilter:
+              - kind: Component
+                spec.type: azure-resource-group
+            defaultKind: Component
+            defaultNamespace: default
+        rg_prefix:
+          title: "📁 Préfixe du Resource Group"
+          type: string
+          description: "Le préfixe utilisé lors de la création du RG (ex: mic → mic-rg-dev)"
+          default: "mic"
+        rg_environment:
+          title: "🌐 Environnement du Resource Group"
+          type: string
+          description: "L'environnement du RG cible"
+          default: dev
+          enum:
+            - dev
+            - test
+            - staging
+            - prod
+            - sandbox
+            - poc
+
+    # ── STEP 3 : BASICS (onglet Basics du portail) ───────────
+    - title: "⚙️ Basics — Configuration Storage"
+      required:
+        - location
+        - storage_kind
+        - storage_account_tier
+      properties:
+        location:
+          title: "🌍 Région Azure"
+          type: string
+          description: "Doit être la même région que votre Resource Group"
+          default: "West Europe"
+          enum:
+            - "West Europe"
+            - "North Europe"
+            - "France Central"
+            - "France South"
+            - "Germany West Central"
+            - "Switzerland North"
+            - "UK South"
+            - "UK West"
+            - "Sweden Central"
+            - "East US"
+            - "East US 2"
+            - "West US 2"
+            - "Canada Central"
+            - "Southeast Asia"
+            - "Australia East"
+            - "Japan East"
+        storage_kind:
+          title: "📦 Type de Storage (Kind)"
+          type: string
+          default: "StorageV2"
+          description: "StorageV2 recommandé pour l'usage général"
+          enum:
+            - "StorageV2"
+            - "BlobStorage"
+            - "FileStorage"
+            - "BlockBlobStorage"
+          enumNames:
+            - "StorageV2 — Usage général v2 (recommandé)"
+            - "BlobStorage — Blob uniquement"
+            - "FileStorage — Azure Files uniquement"
+            - "BlockBlobStorage — Blob blocs haute performance"
+        storage_account_tier:
+          title: "💲 Performance"
+          type: string
+          default: "Standard"
+          enum:
+            - "Standard"
+            - "Premium"
+          enumNames:
+            - "Standard — Disques HDD (usage général)"
+            - "Premium — SSD (latence faible)"
+
+    # ── STEP 4 : REDUNDANCY ───────────────────────────────────
+    - title: "🔁 Redundancy"
+      required:
+        - storage_replication_type
+      properties:
+        storage_replication_type:
+          title: "🔁 Réplication des données"
+          type: string
+          default: "LRS"
+          enum:
+            - "LRS"
+            - "ZRS"
+            - "GRS"
+            - "GZRS"
+            - "RAGRS"
+            - "RAGZRS"
+          enumNames:
+            - "LRS — Locally Redundant Storage (même datacenter)"
+            - "ZRS — Zone Redundant Storage (3 zones)"
+            - "GRS — Geo Redundant Storage (2 régions)"
+            - "GZRS — Geo+Zone Redundant (max redondance)"
+            - "RAGRS — Read-Access GRS (lecture secondaire)"
+            - "RAGZRS — Read-Access GZRS"
+
+    # ── STEP 5 : ADVANCED ─────────────────────────────────────
+    - title: "🔧 Advanced"
+      properties:
+        storage_access_tier:
+          title: "🌡️ Access Tier (pour Blob)"
+          type: string
+          default: "Hot"
+          enum:
+            - "Hot"
+            - "Cool"
+            - "Archive"
+          enumNames:
+            - "Hot — Accès fréquent (coût stockage élevé, accès bas)"
+            - "Cool — Accès infrequent (30 jours minimum)"
+            - "Archive — Archivage long terme (180 jours minimum)"
+        storage_retention_days:
+          title: "🗓️ Rétention soft delete (jours)"
+          type: number
+          default: 7
+          enum:
+            - 7
+            - 14
+            - 30
+            - 60
+            - 90
+            - 180
+            - 365
+
+    # ── STEP 6 : TAGS ─────────────────────────────────────────
+    - title: "🏷️ Tags Azure"
+      properties:
+        tag_owner:
+          title: Owner
+          type: string
+          default: "MIC-SECOPS"
+          enum:
+            - "MIC-SECOPS"
+            - "MIC-IDP"
+            - "NTT-DATA"
+            - "Mercedes-Benz"
+            - "Platform-Team"
+            - "DevOps-Team"
+        tag_project:
+          title: Project
+          type: string
+          default: "IDP-PFE"
+          enum:
+            - "IDP-PFE"
+            - "Mail-API"
+            - "PKI"
+            - "DNS"
+            - "TokenMaster"
+            - "SIEM"
+            - "Platform"
+        tag_criticality:
+          title: Criticality
+          type: string
+          default: "Medium"
+          enum:
+            - "Low"
+            - "Medium"
+            - "High"
+            - "Critical"
+        tag_data_classification:
+          title: Data Classification
+          type: string
+          default: "Internal"
+          enum:
+            - "Public"
+            - "Internal"
+            - "Confidential"
+            - "Restricted"
+
+    # ── STEP 7 : DESTINATION ADO ──────────────────────────────
+    - title: "🚀 Destination Azure DevOps"
+      required:
+        - ado_org
+        - ado_project
+        - repo_name
+      properties:
+        ado_org:
+          title: Organisation Azure DevOps
+          type: string
+          default: "ymi0337"
+        ado_project:
+          title: Projet Azure DevOps
+          type: string
+          default: "IDP-MIC"
+        repo_name:
+          title: Nom du Repository (nouveau)
+          type: string
+          default: "infra-storage-account"
+
+  steps:
+
+    - id: fetch-base
+      name: "📦 Génération du pipeline"
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          component_id: ${{ parameters.rg_prefix }}-st-${{ parameters.rg_environment }}
+          description: ${{ parameters.description }}
+          owner: ${{ parameters.owner }}
+          existing_rg: ${{ parameters.existing_rg }}
+          rg_prefix: ${{ parameters.rg_prefix }}
+          rg_environment: ${{ parameters.rg_environment }}
+          location: ${{ parameters.location }}
+          storage_kind: ${{ parameters.storage_kind }}
+          storage_account_tier: ${{ parameters.storage_account_tier }}
+          storage_replication_type: ${{ parameters.storage_replication_type }}
+          storage_access_tier: ${{ parameters.storage_access_tier }}
+          storage_retention_days: ${{ parameters.storage_retention_days }}
+          tag_owner: ${{ parameters.tag_owner }}
+          tag_project: ${{ parameters.tag_project }}
+          tag_criticality: ${{ parameters.tag_criticality }}
+          tag_data_classification: ${{ parameters.tag_data_classification }}
+          ado_project: ${{ parameters.ado_project }}
+          repo_name: ${{ parameters.repo_name }}
+        copyWithoutRender:
+          - "pipeline-*.yml"
+
+    - id: publish
+      name: "📤 Publication sur Azure DevOps"
+      action: publish:azure
+      input:
+        repoUrl: "dev.azure.com?organization=${{ parameters.ado_org }}&project=${{ parameters.ado_project }}&repo=${{ parameters.repo_name }}"
+        description: "💾 Storage Account – dans ${{ parameters.rg_prefix }}-rg-${{ parameters.rg_environment }}"
+        defaultBranch: main
+
+    - id: register
+      name: "📝 Enregistrement dans le Catalog"
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: "/catalog-info.yaml"
+
+    - id: run-pipeline
+      name: "⚙️ Lancement automatique du Pipeline (Zero-Click) !"
+      action: ado:pipeline:run
+      input:
+        organization: ${{ parameters.ado_org }}
+        project: ${{ parameters.ado_project }}
+        repo: ${{ parameters.repo_name }}
+        pipelineName: pipeline-storage
+        yamlPath: pipeline-storage.yml
+        templateParameters:
+          action: apply
+          rg_prefix: ${{ parameters.rg_prefix }}
+          rg_environment: ${{ parameters.rg_environment }}
+          location: ${{ parameters.location }}
+          storage_kind: ${{ parameters.storage_kind }}
+          storage_account_tier: ${{ parameters.storage_account_tier }}
+          storage_replication_type: ${{ parameters.storage_replication_type }}
+          storage_access_tier: ${{ parameters.storage_access_tier }}
+          storage_retention_days: ${{ parameters.storage_retention_days }}
+
+  output:
+    links:
+      - title: "📁 Repository Azure DevOps"
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: "🔍 Voir dans le Catalog Backstage"
+        icon: catalog
+        entityRef: ${{ steps['register'].output.entityRef }}
+      - title: "▶️ Voir l'exécution du Pipeline"
+        url: ${{ steps['run-pipeline'].output.pipelineRunUrl }}
+    text:
+      - title: "✅ Déploiement en cours"
+        content: |
+          ### Votre infrastructure est en train d'être créée !
+          
+          Backstage a déclenché le pipeline d'infrastructure (`${{ steps['run-pipeline'].output.pipelineId }}`) automatiquement pour vous.
+          
+          > 💡 Une fois terminé, notez le **nom du Storage Account** créé — vous en aurez besoin pour lier un Key Vault.

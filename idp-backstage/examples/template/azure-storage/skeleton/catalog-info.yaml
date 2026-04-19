@@ -1,0 +1,29 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ${{ values.component_id }}
+  title: "💾 Storage – dans ${{ values.rg_prefix }}-rg-${{ values.rg_environment }}"
+  description: ${{ values.description | dump }}
+  annotations:
+    dev.azure.com/project: "${{ values.ado_project }}"
+    dev.azure.com/project-repo: "${{ values.ado_project }}/${{ values.repo_name }}"
+    azure.com/resource-type: "storage-account"
+    azure.com/rg-name: "${{ values.rg_prefix }}-rg-${{ values.rg_environment }}"
+    azure.com/rg-prefix: "${{ values.rg_prefix }}"
+    azure.com/rg-environment: "${{ values.rg_environment }}"
+    azure.com/location: "${{ values.location }}"
+    azure.com/storage-kind: "${{ values.storage_kind }}"
+    azure.com/storage-tier: "${{ values.storage_account_tier }}"
+    azure.com/storage-replication: "${{ values.storage_replication_type }}"
+  tags:
+    - azure
+    - storage-account
+    - terraform
+spec:
+  type: azure-storage-account
+  lifecycle: experimental
+  owner: ${{ values.owner }}
+  dependsOn:
+    {% if values.existing_rg %}
+    - "${{ values.existing_rg }}"
+    {% endif %}

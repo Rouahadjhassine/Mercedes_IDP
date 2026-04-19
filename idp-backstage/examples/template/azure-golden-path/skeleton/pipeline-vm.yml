@@ -1,0 +1,392 @@
+trigger: none
+
+# ============================================================
+# PIPELINE 2 – MACHINE VIRTUELLE (VM)
+# Reproduit l'expérience "Créer une VM" du portail Azure
+# ⚠️ Sélectionner le même préfixe + environnement que le Pipeline RG
+# ============================================================
+
+parameters:
+
+  # ── ACTION ────────────────────────────────────────────────
+  - name: action
+    displayName: "⚡ Action"
+    type: string
+    default: plan
+    values:
+      - plan
+      - apply
+      - destroy
+
+  # ═══════════════════════════════════════════════════════════
+  # SECTION 1 – RESOURCE GROUP CIBLE
+  # (doit correspondre au Resource Group créé par Pipeline #1)
+  # ═══════════════════════════════════════════════════════════
+
+  - name: rg_prefix
+    displayName: "📁 [Resource Group] Préfixe du RG cible"
+    type: string
+    default: "mic"
+
+  - name: rg_environment
+    displayName: "📁 [Resource Group] Environnement du RG cible"
+    type: string
+    default: "dev"
+    values:
+      - "dev"
+      - "test"
+      - "staging"
+      - "prod"
+      - "sandbox"
+      - "poc"
+
+  # ═══════════════════════════════════════════════════════════
+  # SECTION 2 – PARAMÈTRES DE BASE VM (onglet "Basics")
+  # ═══════════════════════════════════════════════════════════
+
+  - name: location
+    displayName: "🌍 [Basics] Région (Region)"
+    type: string
+    default: "West Europe"
+    values:
+      - "West Europe"
+      - "North Europe"
+      - "France Central"
+      - "France South"
+      - "Germany West Central"
+      - "Switzerland North"
+      - "UK South"
+      - "UK West"
+      - "Sweden Central"
+      - "East US"
+      - "East US 2"
+      - "West US 2"
+      - "Canada Central"
+      - "Southeast Asia"
+      - "Australia East"
+      - "Japan East"
+
+  - name: vm_count
+    displayName: "🔢 [Basics] Nombre d'instances VM"
+    type: number
+    default: 1
+    values:
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+
+  # ═══════════════════════════════════════════════════════════
+  # SECTION 3 – IMAGE OS (onglet "Image")
+  # ═══════════════════════════════════════════════════════════
+
+  - name: vm_os_type
+    displayName: "💻 [Image] Famille OS"
+    type: string
+    default: "windows"
+    values:
+      - "windows"
+      - "linux"
+
+  - name: vm_os_image
+    displayName: "🖼️ [Image] Image OS"
+    type: string
+    default: "WindowsServer2022"
+    values:
+      - "WindowsServer2022"
+      - "WindowsServer2019"
+      - "WindowsServer2016"
+      - "UbuntuServer2204"
+      - "UbuntuServer2004"
+      - "RedHat9"
+
+  # ═══════════════════════════════════════════════════════════
+  # SECTION 4 – TAILLE VM (onglet "Size")
+  # ═══════════════════════════════════════════════════════════
+
+  - name: vm_size
+    displayName: "📐 [Size] Taille de la VM"
+    type: string
+    default: "Standard_B2s"
+    values:
+      # Séries B – Burstable (dev/test)
+      - "Standard_B1s"    # 1 vCPU, 1 GB
+      - "Standard_B2s"    # 2 vCPU, 4 GB
+      - "Standard_B4ms"   # 4 vCPU, 16 GB
+      # Séries D – General Purpose
+      - "Standard_D2s_v3" # 2 vCPU, 8 GB
+      - "Standard_D4s_v3" # 4 vCPU, 16 GB
+      - "Standard_D8s_v3" # 8 vCPU, 32 GB
+      # Séries E – Memory Optimized
+      - "Standard_E2s_v3" # 2 vCPU, 16 GB
+      - "Standard_E4s_v3" # 4 vCPU, 32 GB
+      # Séries F – Compute Optimized
+      - "Standard_F2s_v2" # 2 vCPU, 4 GB
+      - "Standard_F4s_v2" # 4 vCPU, 8 GB
+
+  # ═══════════════════════════════════════════════════════════
+  # SECTION 5 – DISQUES (onglet "Disks")
+  # ═══════════════════════════════════════════════════════════
+
+  - name: vm_disk_type
+    displayName: "💾 [Disks] Type de disque OS"
+    type: string
+    default: "Standard_LRS"
+    values:
+      - "Standard_LRS"      # HDD Standard (moins cher)
+      - "StandardSSD_LRS"   # SSD Standard
+      - "Premium_LRS"       # SSD Premium (prod recommandé)
+      - "UltraSSD_LRS"      # Ultra SSD (hautes performances)
+
+  # ═══════════════════════════════════════════════════════════
+  # SECTION 6 – TAGS (onglet "Tags")
+  # ═══════════════════════════════════════════════════════════
+
+  - name: tag_owner
+    displayName: "🏷️ [Tags] Owner"
+    type: string
+    default: "MIC-SECOPS"
+    values:
+      - "MIC-SECOPS"
+      - "MIC-IDP"
+      - "NTT-DATA"
+      - "Mercedes-Benz"
+      - "Platform-Team"
+      - "DevOps-Team"
+
+  - name: tag_project
+    displayName: "🏷️ [Tags] Project"
+    type: string
+    default: "IDP-PFE"
+    values:
+      - "IDP-PFE"
+      - "Mail-API"
+      - "PKI"
+      - "DNS"
+      - "TokenMaster"
+      - "SIEM"
+      - "Platform"
+
+  - name: tag_criticality
+    displayName: "🏷️ [Tags] Criticality"
+    type: string
+    default: "Medium"
+    values:
+      - "Low"
+      - "Medium"
+      - "High"
+      - "Critical"
+
+variables:
+  TF_VERSION: "1.14.5"
+  TF_WORKING_DIR: "pipelines/vm"
+  SUBSCRIPTION_ID: "0b86b0f9-d3f5-4387-8003-3b8955b9e8fa"
+  VM_ADMIN_PASSWORD: "P@ssw0rdPFE2024!"
+
+stages:
+
+# ── STAGE 0 : VÉRIFICATION PRÉ-REQUIS ───────────────────────
+- stage: CheckPrerequisites
+  displayName: "0 🔍 Vérifier Resource Group cible"
+  jobs:
+  - job: CheckRG
+    pool:
+      vmImage: "ubuntu-latest"
+    steps:
+    - checkout: self
+
+    - task: AzureCLI@2
+      displayName: "✅ Vérifier que le RG '${{ parameters.rg_prefix }}-rg-${{ parameters.rg_environment }}' existe"
+      inputs:
+        azureSubscription: "MIC-IDP"
+        scriptType: "bash"
+        scriptLocation: "inlineScript"
+        inlineScript: |
+          RG_NAME="${{ parameters.rg_prefix }}-rg-${{ parameters.rg_environment }}"
+          RG_EXISTS=$(az group exists --name "$RG_NAME")
+
+          if [ "$RG_EXISTS" = "true" ]; then
+            echo "✅ Resource Group '$RG_NAME' trouvé → déploiement de la VM dans ce RG."
+          else
+            # Vérifier via le remote state
+            BLOB_EXISTS=$(az storage blob exists \
+              --account-name pfetfstate \
+              --container-name tfstate \
+              --name resource-group.tfstate \
+              --query exists -o tsv 2>/dev/null || echo "false")
+
+            if [ "$BLOB_EXISTS" = "true" ]; then
+              echo "✅ Remote state Resource Group trouvé."
+            else
+              echo "❌ ERREUR: Resource Group '$RG_NAME' introuvable."
+              echo "   Lancez d'abord le Pipeline #1 (Resource Group) avec action=apply."
+              exit 1
+            fi
+          fi
+
+# ── STAGE 1 : VALIDATE ──────────────────────────────────────
+- stage: Validate
+  displayName: "1 ✅ Validation"
+  dependsOn: CheckPrerequisites
+  jobs:
+  - job: Validate
+    pool:
+      vmImage: "ubuntu-latest"
+    steps:
+    - checkout: self
+
+    - script: |
+        wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
+        unzip -q terraform_$(TF_VERSION)_linux_amd64.zip
+        sudo mv terraform /usr/local/bin/
+      displayName: "📦 Installer Terraform"
+
+    - script: |
+        cd $(TF_WORKING_DIR)
+        terraform init -backend=false
+        terraform validate
+      displayName: "🔍 Terraform Validate"
+
+# ── STAGE 2 : PLAN ──────────────────────────────────────────
+- stage: Plan
+  displayName: "2 📋 Plan (aperçu)"
+  dependsOn: Validate
+  jobs:
+  - job: Plan
+    pool:
+      vmImage: "ubuntu-latest"
+    steps:
+    - checkout: self
+
+    - script: |
+        wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
+        unzip -q terraform_$(TF_VERSION)_linux_amd64.zip
+        sudo mv terraform /usr/local/bin/
+      displayName: "📦 Installer Terraform"
+
+    - task: AzureCLI@2
+      displayName: "🔗 Terraform Init + Plan"
+      inputs:
+        azureSubscription: "MIC-IDP"
+        scriptType: "bash"
+        scriptLocation: "inlineScript"
+        addSpnToEnvironment: true
+        inlineScript: |
+          export ARM_CLIENT_ID=$servicePrincipalId
+          export ARM_CLIENT_SECRET=$servicePrincipalKey
+          export ARM_TENANT_ID=$tenantId
+          export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+
+          cd $(TF_WORKING_DIR)
+          terraform init
+
+          terraform plan \
+            -var="subscription_id=$(SUBSCRIPTION_ID)" \
+            -var="vm_count=${{ parameters.vm_count }}" \
+            -var="vm_size=${{ parameters.vm_size }}" \
+            -var="vm_os_type=${{ parameters.vm_os_type }}" \
+            -var="vm_os_image=${{ parameters.vm_os_image }}" \
+            -var="vm_disk_type=${{ parameters.vm_disk_type }}" \
+            -var="vm_admin_password=$(VM_ADMIN_PASSWORD)" \
+            -out=$(Build.ArtifactStagingDirectory)/tfplan
+
+    - publish: $(Build.ArtifactStagingDirectory)/tfplan
+      artifact: tfplan-vm
+
+# ── STAGE 3 : APPLY ─────────────────────────────────────────
+- stage: Apply
+  displayName: "3 🚀 Apply (créer VM)"
+  dependsOn: Plan
+  condition: and(succeeded(), eq('${{ parameters.action }}', 'apply'))
+  jobs:
+  - deployment: Apply
+    environment: "azure-pfe"
+    pool:
+      vmImage: "ubuntu-latest"
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+
+          - script: |
+              wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
+              unzip -q terraform_$(TF_VERSION)_linux_amd64.zip
+              sudo mv terraform /usr/local/bin/
+            displayName: "📦 Installer Terraform"
+
+          - task: AzureCLI@2
+            displayName: "✅ Terraform Apply"
+            inputs:
+              azureSubscription: "MIC-IDP"
+              scriptType: "bash"
+              scriptLocation: "inlineScript"
+              addSpnToEnvironment: true
+              inlineScript: |
+                export ARM_CLIENT_ID=$servicePrincipalId
+                export ARM_CLIENT_SECRET=$servicePrincipalKey
+                export ARM_TENANT_ID=$tenantId
+                export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+
+                cd $(TF_WORKING_DIR)
+                terraform init
+                terraform apply -auto-approve \
+                  $(Pipeline.Workspace)/tfplan-vm/tfplan
+
+                echo ""
+                echo "============================================"
+                echo "  ✅ VM créée avec succès !"
+                echo "  📁 RG: ${{ parameters.rg_prefix }}-rg-${{ parameters.rg_environment }}"
+                echo "  🌍 Région: ${{ parameters.location }}"
+                echo "  💻 OS: ${{ parameters.vm_os_type }} – ${{ parameters.vm_os_image }}"
+                echo "  📐 Taille: ${{ parameters.vm_size }} x ${{ parameters.vm_count }}"
+                echo "  💾 Disque: ${{ parameters.vm_disk_type }}"
+                echo "============================================"
+                terraform output
+
+# ── STAGE 4 : DESTROY ───────────────────────────────────────
+- stage: Destroy
+  displayName: "4 🗑️ Destroy (supprimer VM)"
+  dependsOn: []
+  condition: eq('${{ parameters.action }}', 'destroy')
+  jobs:
+  - deployment: Destroy
+    environment: "azure-pfe"
+    pool:
+      vmImage: "ubuntu-latest"
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+
+          - script: |
+              wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
+              unzip -q terraform_$(TF_VERSION)_linux_amd64.zip
+              sudo mv terraform /usr/local/bin/
+            displayName: "📦 Installer Terraform"
+
+          - task: AzureCLI@2
+            displayName: "🗑️ Terraform Destroy"
+            inputs:
+              azureSubscription: "MIC-IDP"
+              scriptType: "bash"
+              scriptLocation: "inlineScript"
+              addSpnToEnvironment: true
+              inlineScript: |
+                export ARM_CLIENT_ID=$servicePrincipalId
+                export ARM_CLIENT_SECRET=$servicePrincipalKey
+                export ARM_TENANT_ID=$tenantId
+                export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+
+                cd $(TF_WORKING_DIR)
+                terraform init
+                terraform destroy -auto-approve \
+                  -var="subscription_id=$(SUBSCRIPTION_ID)" \
+                  -var="vm_count=${{ parameters.vm_count }}" \
+                  -var="vm_size=${{ parameters.vm_size }}" \
+                  -var="vm_os_type=${{ parameters.vm_os_type }}" \
+                  -var="vm_os_image=${{ parameters.vm_os_image }}" \
+                  -var="vm_disk_type=${{ parameters.vm_disk_type }}" \
+                  -var="vm_admin_password=$(VM_ADMIN_PASSWORD)"

@@ -1,0 +1,29 @@
+
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-user
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: guest
+spec:
+  memberOf: [guests]
+---
+# >>> ACTION REQUIRED: Replace this email with your actual Microsoft sign-in email <<<
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: developers
+spec:
+  profile:
+    displayName: Developer User
+    email: roua@xfunctions.onmicrosoft.com
+  memberOf: [guests]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-group
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: guests
+spec:
+  type: team
+  children: []

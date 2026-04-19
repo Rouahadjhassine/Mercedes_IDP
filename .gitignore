@@ -5,3 +5,8 @@
 *.tfstate.backup
 tfplan
 terraform.tfvars
+
+# ── SECRETS – ne jamais pousser sur GitHub ──────────────────
+.env
+idp-backstage/start.ps1
+idp-backstage/.env

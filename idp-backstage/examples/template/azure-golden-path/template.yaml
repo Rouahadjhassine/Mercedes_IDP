@@ -1,0 +1,188 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: azure-golden-path-template
+  title: Nouveau Service Azure (Golden Path)
+  description: Génère un dépôt IaC basé sur vos pipelines (VM, KeyVault, Storage, RG).
+  tags:
+    - azure
+    - terraform
+    - golden-path
+spec:
+  owner: user:guest
+  type: service
+
+  parameters:
+    - title: 1. Informations du Service
+      required:
+        - component_id
+        - owner
+      properties:
+        component_id:
+          title: Nom du Service
+          type: string
+          description: Le nom unique de ce nouveau service dans Backstage
+          ui:field: EntityNamePicker
+        description:
+          title: Description
+          type: string
+          description: Que fait cette application ?
+        owner:
+          title: Équipe Propriétaire
+          type: string
+          ui:field: OwnerPicker
+          ui:options:
+            catalogFilter:
+              kind: Group
+
+    - title: 2. Projet & Environnement
+      required:
+        - prefix
+        - environment
+        - location
+        - subscription_id
+      properties:
+        subscription_id:
+          title: Azure Subscription ID
+          type: string
+          default: "0b86b0f9-d3f5-4387-8003-3b8955b9e8fa"
+          description: L'identifiant de votre compte Azure
+        prefix:
+          title: Préfixe des ressources (2 à 10 chars)
+          type: string
+          default: pfe
+        environment:
+          title: Environnement
+          type: string
+          enum:
+            - dev
+            - test
+            - staging
+            - prod
+          default: dev
+        location:
+          title: Région Azure
+          type: string
+          enum:
+            - West Europe
+            - North Europe
+            - France Central
+            - East US
+            - UK South
+          default: West Europe
+
+    - title: 3. Configuration VM
+      required:
+        - vm_size
+        - vm_os_image
+      properties:
+        vm_size:
+          title: Taille VM Azure
+          type: string
+          enum:
+            - Standard_B1s
+            - Standard_B2s
+            - Standard_B4ms
+            - Standard_D2s_v3
+          default: Standard_B2s
+        vm_os_image:
+          title: Image OS
+          type: string
+          enum:
+            - WindowsServer2022
+            - WindowsServer2019
+            - UbuntuServer2204
+            - UbuntuServer2004
+          default: WindowsServer2022
+
+    - title: 4. Configuration Storage & Key Vault
+      required:
+        - storage_account_tier
+        - storage_kind
+        - keyvault_sku
+      properties:
+        storage_account_tier:
+          title: Tier Storage
+          type: string
+          enum:
+            - Standard
+            - Premium
+          default: Standard
+        storage_kind:
+          title: Type Storage
+          type: string
+          enum:
+            - Storage
+            - StorageV2
+            - BlobStorage
+          default: StorageV2
+        keyvault_sku:
+          title: SKU Key Vault
+          type: string
+          enum:
+            - standard
+            - premium
+          default: standard
+
+    - title: 5. Destination Git / Azure DevOps
+      required:
+        - ado_org
+        - ado_project
+        - repo_name
+      properties:
+        ado_org:
+          title: Organisation Azure DevOps
+          type: string
+        ado_project:
+          title: Projet Azure DevOps
+          type: string
+        repo_name:
+          title: Nom du nouveau Repository
+          type: string
+
+  steps:
+    - id: fetch-base
+      name: Génération du code Infrastructure
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          component_id: ${{ parameters.component_id }}
+          description: ${{ parameters.description }}
+          owner: ${{ parameters.owner }}
+          prefix: ${{ parameters.prefix }}
+          environment: ${{ parameters.environment }}
+          location: ${{ parameters.location }}
+          ado_project: ${{ parameters.ado_project }}
+          repo_name: ${{ parameters.repo_name }}
+          # Variables Terraform
+          vm_size: ${{ parameters.vm_size }}
+          vm_os_image: ${{ parameters.vm_os_image }}
+          storage_account_tier: ${{ parameters.storage_account_tier }}
+          storage_kind: ${{ parameters.storage_kind }}
+          keyvault_sku: ${{ parameters.keyvault_sku }}
+          subscription_id: ${{ parameters.subscription_id }}
+        copyWithoutRender:
+          - "pipeline-*.yml"
+
+    - id: publish
+      name: Publication sur Azure DevOps
+      action: publish:azure
+      input:
+        repoUrl: dev.azure.com?organization=${{ parameters.ado_org }}&project=${{ parameters.ado_project }}&repo=${{ parameters.repo_name }}
+        description: This is ${{ parameters.component_id }}
+
+    - id: register
+      name: Enregistrement dans le Catalog
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: '/catalog-info.yaml'
+
+  output:
+    links:
+      - title: Dépôt Azure DevOps (Code Source)
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: Ouvrir dans le Catalogue Backstage
+        icon: catalog
+        entityRef: ${{ steps['register'].output.entityRef }}

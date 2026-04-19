@@ -1,0 +1,257 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: azure-resource-group
+  title: "🏗️ Azure Resource Group"
+  description: >
+    Crée un Resource Group Azure — le conteneur logique de toutes vos ressources.
+    C'est la première étape obligatoire avant de déployer un Storage, un Key Vault ou une VM.
+  tags:
+    - azure
+    - terraform
+    - resource-group
+    - foundation
+  links:
+    - url: https://portal.azure.com/#create/Microsoft.ResourceGroup
+      title: Voir sur Azure Portal
+      icon: web
+spec:
+  owner: user:guest
+  type: azure-infrastructure
+
+  parameters:
+
+    # ── STEP 1 : INFOS DU COMPOSANT ──────────────────────────
+    - title: "📋 Informations du composant"
+      required:
+        - owner
+      properties:
+        description:
+          title: Description
+          type: string
+          description: "Objectif de ce Resource Group (ex: Environnement de développement IDP)"
+        owner:
+          title: Équipe propriétaire
+          type: string
+          ui:field: OwnerPicker
+          ui:options:
+            catalogFilter:
+              kind: Group
+
+    # ── STEP 2 : CONFIGURATION AZURE ─────────────────────────
+    - title: "⚙️ Configuration Azure"
+      description: >
+        Définissez les paramètres de base. Le nom final du RG sera: PREFIX-rg-ENVIRONMENT (ex: mic-rg-dev)
+      required:
+        - rg_prefix
+        - environment
+        - location
+      properties:
+        rg_prefix:
+          title: "🏷️ Préfixe"
+          type: string
+          description: "Préfixe du nom (2–10 caractères). Format final: PREFIX-rg-ENV"
+          default: "mic"
+          maxLength: 10
+        environment:
+          title: "🌐 Environnement"
+          type: string
+          description: "Cycle de vie du déploiement"
+          default: dev
+          enum:
+            - dev
+            - test
+            - staging
+            - prod
+            - sandbox
+            - poc
+          enumNames:
+            - "🔧 Development"
+            - "🧪 Test"
+            - "🎭 Staging"
+            - "🚀 Production"
+            - "🏖️ Sandbox"
+            - "💡 Proof of Concept"
+        location:
+          title: "🌍 Région Azure"
+          type: string
+          description: "Région où le Resource Group sera créé"
+          default: "West Europe"
+          enum:
+            - "West Europe"
+            - "North Europe"
+            - "France Central"
+            - "France South"
+            - "Germany West Central"
+            - "Switzerland North"
+            - "UK South"
+            - "UK West"
+            - "Sweden Central"
+            - "Norway East"
+            - "East US"
+            - "East US 2"
+            - "West US 2"
+            - "Canada Central"
+            - "Southeast Asia"
+            - "Australia East"
+            - "Japan East"
+
+    # ── STEP 3 : TAGS ─────────────────────────────────────────
+    - title: "🏷️ Tags Azure"
+      description: "Les tags permettent d'organiser, filtrer et facturer vos ressources"
+      properties:
+        tag_owner:
+          title: Owner
+          type: string
+          default: "MIC-SECOPS"
+          enum:
+            - "MIC-SECOPS"
+            - "MIC-IDP"
+            - "NTT-DATA"
+            - "Mercedes-Benz"
+            - "Platform-Team"
+            - "DevOps-Team"
+        tag_project:
+          title: Project
+          type: string
+          default: "IDP-PFE"
+          enum:
+            - "IDP-PFE"
+            - "Mail-API"
+            - "PKI"
+            - "DNS"
+            - "TokenMaster"
+            - "SIEM"
+            - "Platform"
+        tag_cost_center:
+          title: Cost Center
+          type: string
+          default: "MIC-001"
+          enum:
+            - "MIC-001"
+            - "MIC-002"
+            - "SECOPS-100"
+            - "INFRA-200"
+            - "RD-300"
+        tag_managed_by:
+          title: Managed By
+          type: string
+          default: "Terraform"
+          enum:
+            - "Terraform"
+            - "OpenTofu"
+            - "Bicep"
+            - "Manual"
+        tag_criticality:
+          title: Criticality
+          type: string
+          default: "Medium"
+          enum:
+            - "Low"
+            - "Medium"
+            - "High"
+            - "Critical"
+        tag_data_classification:
+          title: Data Classification
+          type: string
+          default: "Internal"
+          enum:
+            - "Public"
+            - "Internal"
+            - "Confidential"
+            - "Restricted"
+
+    # ── STEP 4 : DESTINATION ADO ──────────────────────────────
+    - title: "🚀 Destination Azure DevOps"
+      required:
+        - ado_org
+        - ado_project
+        - repo_name
+      properties:
+        ado_org:
+          title: Organisation Azure DevOps
+          type: string
+          default: "ymi0337"
+        ado_project:
+          title: Projet Azure DevOps
+          type: string
+          default: "IDP-MIC"
+        repo_name:
+          title: Nom du Repository (nouveau)
+          type: string
+          description: "Un nouveau repo sera créé avec ce nom dans Azure DevOps"
+          default: "infra-resource-group"
+
+  steps:
+
+    - id: fetch-base
+      name: "📦 Génération du pipeline"
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          component_id: ${{ parameters.rg_prefix }}-rg-${{ parameters.environment }}
+          description: ${{ parameters.description }}
+          owner: ${{ parameters.owner }}
+          rg_prefix: ${{ parameters.rg_prefix }}
+          environment: ${{ parameters.environment }}
+          location: ${{ parameters.location }}
+          tag_owner: ${{ parameters.tag_owner }}
+          tag_project: ${{ parameters.tag_project }}
+          tag_cost_center: ${{ parameters.tag_cost_center }}
+          tag_managed_by: ${{ parameters.tag_managed_by }}
+          tag_criticality: ${{ parameters.tag_criticality }}
+          tag_data_classification: ${{ parameters.tag_data_classification }}
+          ado_project: ${{ parameters.ado_project }}
+          repo_name: ${{ parameters.repo_name }}
+        copyWithoutRender:
+          - "pipeline-*.yml"
+
+    - id: publish
+      name: "📤 Publication sur Azure DevOps"
+      action: publish:azure
+      input:
+        repoUrl: "dev.azure.com?organization=${{ parameters.ado_org }}&project=${{ parameters.ado_project }}&repo=${{ parameters.repo_name }}"
+        description: "🏗️ Resource Group – ${{ parameters.rg_prefix }}-rg-${{ parameters.environment }}"
+        defaultBranch: main
+
+    - id: register
+      name: "📝 Enregistrement dans le Catalog"
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: "/catalog-info.yaml"
+
+    - id: run-pipeline
+      name: "⚙️ Lancement automatique du Pipeline (Zero-Click) !"
+      action: ado:pipeline:run
+      input:
+        organization: ${{ parameters.ado_org }}
+        project: ${{ parameters.ado_project }}
+        repo: ${{ parameters.repo_name }}
+        pipelineName: pipeline-resource-group
+        yamlPath: pipeline-resource-group.yml
+        templateParameters:
+          action: apply
+          rg_name_prefix: ${{ parameters.rg_prefix }}
+          environment: ${{ parameters.environment }}
+          location: ${{ parameters.location }}
+
+  output:
+    links:
+      - title: "📁 Repository Azure DevOps"
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: "🔍 Voir dans le Catalog Backstage"
+        icon: catalog
+        entityRef: ${{ steps['register'].output.entityRef }}
+      - title: "▶️ Voir l'exécution du Pipeline"
+        url: ${{ steps['run-pipeline'].output.pipelineRunUrl }}
+    text:
+      - title: "✅ Déploiement en cours"
+        content: |
+          ### Votre infrastructure est en train d'être créée !
+          
+          Backstage a déclenché le pipeline d'infrastructure (`${{ steps['run-pipeline'].output.pipelineId }}`) automatiquement pour vous.
+          
+          > 💡 Notez votre **prefix** (`${{ parameters.rg_prefix }}`) et **environnement** (`${{ parameters.environment }}`).
+          > Vous en aurez besoin pour créer un Storage, Key Vault ou VM dans ce Resource Group.

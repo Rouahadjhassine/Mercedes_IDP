@@ -1,0 +1,338 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: azure-key-vault
+  title: "🔐 Azure Key Vault"
+  description: >
+    Crée un Azure Key Vault pour gérer vos secrets, clés et certificats.
+    ⚠️ Prérequis : un Resource Group doit exister. Un Storage Account peut également être lié (optionnel).
+  tags:
+    - azure
+    - terraform
+    - keyvault
+    - security
+    - depends-on-rg
+  links:
+    - url: https://portal.azure.com/#create/Microsoft.KeyVault-ARM
+      title: Voir sur Azure Portal
+      icon: web
+spec:
+  owner: user:guest
+  type: azure-infrastructure
+
+  parameters:
+
+    # ── STEP 1 : INFOS DU COMPOSANT ──────────────────────────
+    - title: "📋 Informations du composant"
+      required:
+        - owner
+      properties:
+        description:
+          title: Description
+          type: string
+          description: "Objectif de ce Key Vault (ex: Stockage des secrets de l'environnement de dev)"
+        owner:
+          title: Équipe propriétaire
+          type: string
+          ui:field: OwnerPicker
+          ui:options:
+            catalogFilter:
+              kind: Group
+
+    # ── STEP 2 : RESOURCE GROUP CIBLE ────────────────────────
+    - title: "📁 Resource Group cible"
+      description: >
+        Sélectionnez un Resource Group existant dans votre catalogue,
+        ou saisissez manuellement le préfixe et l'environnement.
+      required:
+        - rg_prefix
+        - rg_environment
+      properties:
+        existing_rg:
+          title: "🔍 Sélectionner un Resource Group existant (optionnel)"
+          type: string
+          description: "Parcourez les Resource Groups enregistrés dans Backstage"
+          ui:field: EntityPicker
+          ui:options:
+            catalogFilter:
+              - kind: Component
+                spec.type: azure-resource-group
+            defaultKind: Component
+            defaultNamespace: default
+        rg_prefix:
+          title: "📁 Préfixe du Resource Group"
+          type: string
+          description: "Le préfixe utilisé lors de la création du RG (ex: mic)"
+          default: "mic"
+        rg_environment:
+          title: "🌐 Environnement du Resource Group"
+          type: string
+          default: dev
+          enum:
+            - dev
+            - test
+            - staging
+            - prod
+            - sandbox
+            - poc
+
+    # ── STEP 3 : LIEN STORAGE ACCOUNT (optionnel) ────────────
+    - title: "💾 Lien Storage Account (optionnel)"
+      description: >
+        Liez un Storage Account existant pour stocker automatiquement son nom
+        comme secret dans votre Key Vault. Sélectionnez-en un dans votre catalogue.
+      properties:
+        link_storage:
+          title: "🔗 Lier au Storage Account existant ?"
+          type: boolean
+          default: true
+        existing_storage:
+          title: "💾 Sélectionner un Storage Account existant"
+          type: string
+          description: "Sélectionnez le Storage Account à lier (son nom sera stocké comme secret dans le KV)"
+          ui:field: EntityPicker
+          ui:options:
+            catalogFilter:
+              - kind: Component
+                spec.type: azure-storage-account
+            defaultKind: Component
+            defaultNamespace: default
+        storage_environment:
+          title: "🌐 Environnement du Storage Account"
+          type: string
+          description: "Doit correspondre à l'environnement du Storage déployé"
+          default: dev
+          enum:
+            - dev
+            - test
+            - staging
+            - prod
+            - sandbox
+            - poc
+
+    # ── STEP 4 : BASICS (onglet Basics du portail) ───────────
+    - title: "⚙️ Basics — Configuration Key Vault"
+      required:
+        - location
+        - keyvault_sku
+      properties:
+        location:
+          title: "🌍 Région Azure"
+          type: string
+          description: "Doit être la même région que votre Resource Group"
+          default: "West Europe"
+          enum:
+            - "West Europe"
+            - "North Europe"
+            - "France Central"
+            - "France South"
+            - "Germany West Central"
+            - "Switzerland North"
+            - "UK South"
+            - "UK West"
+            - "Sweden Central"
+            - "East US"
+            - "East US 2"
+            - "West US 2"
+            - "Canada Central"
+            - "Southeast Asia"
+            - "Australia East"
+            - "Japan East"
+        keyvault_sku:
+          title: "💎 Pricing Tier (SKU)"
+          type: string
+          default: "standard"
+          enum:
+            - "standard"
+            - "premium"
+          enumNames:
+            - "Standard — Usage général, secrets/clés/certificats"
+            - "Premium — + HSM (Hardware Security Module)"
+        keyvault_retention_days:
+          title: "🗓️ Soft Delete retention (jours)"
+          type: number
+          default: 7
+          enum:
+            - 7
+            - 14
+            - 30
+            - 60
+            - 90
+
+    # ── STEP 5 : ACCESS CONFIGURATION ────────────────────────
+    - title: "🔒 Access Configuration"
+      description: "Configurez les permissions d'accès au Key Vault"
+      properties:
+        keyvault_purge_protection:
+          title: "🔒 Purge Protection"
+          type: boolean
+          default: false
+          description: "Recommandé pour la production. Empêche la suppression définitive."
+        keyvault_disk_encryption:
+          title: "💿 Autoriser Azure Disk Encryption"
+          type: boolean
+          default: true
+        keyvault_deployment:
+          title: "🚀 Autoriser Azure Deployment (pour les VMs)"
+          type: boolean
+          default: true
+
+    # ── STEP 6 : SECRETS ──────────────────────────────────────
+    - title: "🔑 Secrets automatiques"
+      properties:
+        store_vm_password:
+          title: "🔑 Stocker le mot de passe admin VM dans le KV"
+          type: boolean
+          default: true
+          description: "Si activé, le mot de passe admin VM sera stocké comme secret dans ce Key Vault"
+
+    # ── STEP 7 : TAGS ─────────────────────────────────────────
+    - title: "🏷️ Tags Azure"
+      properties:
+        tag_owner:
+          title: Owner
+          type: string
+          default: "MIC-SECOPS"
+          enum:
+            - "MIC-SECOPS"
+            - "MIC-IDP"
+            - "NTT-DATA"
+            - "Mercedes-Benz"
+            - "Platform-Team"
+            - "DevOps-Team"
+        tag_project:
+          title: Project
+          type: string
+          default: "IDP-PFE"
+          enum:
+            - "IDP-PFE"
+            - "Mail-API"
+            - "PKI"
+            - "DNS"
+            - "TokenMaster"
+            - "SIEM"
+            - "Platform"
+        tag_criticality:
+          title: Criticality
+          type: string
+          default: "High"
+          enum:
+            - "Low"
+            - "Medium"
+            - "High"
+            - "Critical"
+        tag_data_classification:
+          title: Data Classification
+          type: string
+          default: "Confidential"
+          enum:
+            - "Public"
+            - "Internal"
+            - "Confidential"
+            - "Restricted"
+
+    # ── STEP 8 : DESTINATION ADO ──────────────────────────────
+    - title: "🚀 Destination Azure DevOps"
+      required:
+        - ado_org
+        - ado_project
+        - repo_name
+      properties:
+        ado_org:
+          title: Organisation Azure DevOps
+          type: string
+          default: "ymi0337"
+        ado_project:
+          title: Projet Azure DevOps
+          type: string
+          default: "IDP-MIC"
+        repo_name:
+          title: Nom du Repository (nouveau)
+          type: string
+          default: "infra-key-vault"
+
+  steps:
+
+    - id: fetch-base
+      name: "📦 Génération du pipeline"
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          component_id: ${{ parameters.rg_prefix }}-kv-${{ parameters.rg_environment }}
+          description: ${{ parameters.description }}
+          owner: ${{ parameters.owner }}
+          existing_rg: ${{ parameters.existing_rg }}
+          rg_prefix: ${{ parameters.rg_prefix }}
+          rg_environment: ${{ parameters.rg_environment }}
+          link_storage: ${{ parameters.link_storage }}
+          existing_storage: ${{ parameters.existing_storage }}
+          storage_environment: ${{ parameters.storage_environment }}
+          location: ${{ parameters.location }}
+          keyvault_sku: ${{ parameters.keyvault_sku }}
+          keyvault_retention_days: ${{ parameters.keyvault_retention_days }}
+          keyvault_purge_protection: ${{ parameters.keyvault_purge_protection }}
+          keyvault_disk_encryption: ${{ parameters.keyvault_disk_encryption }}
+          keyvault_deployment: ${{ parameters.keyvault_deployment }}
+          store_vm_password: ${{ parameters.store_vm_password }}
+          tag_owner: ${{ parameters.tag_owner }}
+          tag_project: ${{ parameters.tag_project }}
+          tag_criticality: ${{ parameters.tag_criticality }}
+          tag_data_classification: ${{ parameters.tag_data_classification }}
+          ado_project: ${{ parameters.ado_project }}
+          repo_name: ${{ parameters.repo_name }}
+        copyWithoutRender:
+          - "pipeline-*.yml"
+
+    - id: publish
+      name: "📤 Publication sur Azure DevOps"
+      action: publish:azure
+      input:
+        repoUrl: "dev.azure.com?organization=${{ parameters.ado_org }}&project=${{ parameters.ado_project }}&repo=${{ parameters.repo_name }}"
+        description: "🔐 Key Vault – dans ${{ parameters.rg_prefix }}-rg-${{ parameters.rg_environment }}"
+        defaultBranch: main
+
+    - id: register
+      name: "📝 Enregistrement dans le Catalog"
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: "/catalog-info.yaml"
+
+    - id: run-pipeline
+      name: "⚙️ Lancement automatique du Pipeline (Zero-Click) !"
+      action: ado:pipeline:run
+      input:
+        organization: ${{ parameters.ado_org }}
+        project: ${{ parameters.ado_project }}
+        repo: ${{ parameters.repo_name }}
+        pipelineName: pipeline-keyvault
+        yamlPath: pipeline-keyvault.yml
+        templateParameters:
+          action: apply
+          rg_prefix: ${{ parameters.rg_prefix }}
+          rg_environment: ${{ parameters.rg_environment }}
+          location: ${{ parameters.location }}
+          keyvault_sku: ${{ parameters.keyvault_sku }}
+          keyvault_retention_days: ${{ parameters.keyvault_retention_days }}
+          keyvault_purge_protection: ${{ parameters.keyvault_purge_protection }}
+          keyvault_disk_encryption: ${{ parameters.keyvault_disk_encryption }}
+          keyvault_deployment: ${{ parameters.keyvault_deployment }}
+          link_storage: ${{ parameters.link_storage }}
+          store_vm_password: ${{ parameters.store_vm_password }}
+
+  output:
+    links:
+      - title: "📁 Repository Azure DevOps"
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: "🔍 Voir dans le Catalog Backstage"
+        icon: catalog
+        entityRef: ${{ steps['register'].output.entityRef }}
+      - title: "▶️ Voir l'exécution du Pipeline"
+        url: ${{ steps['run-pipeline'].output.pipelineRunUrl }}
+    text:
+      - title: "✅ Déploiement en cours"
+        content: |
+          ### Votre infrastructure est en train d'être créée !
+          
+          Backstage a déclenché le pipeline d'infrastructure (`${{ steps['run-pipeline'].output.pipelineId }}`) automatiquement pour vous.

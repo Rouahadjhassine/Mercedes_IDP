@@ -1,0 +1,391 @@
+trigger: none
+
+# ============================================================
+# PIPELINE 1 – RESOURCE GROUP
+# Reproduit l'expérience "Créer un Resource Group" du portail Azure
+# avec toutes les options disponibles en listes déroulantes
+# ============================================================
+
+parameters:
+
+  # ── ACTION ────────────────────────────────────────────────
+  - name: action
+    displayName: "⚡ Action"
+    type: string
+    default: plan
+    values:
+      - plan
+      - apply
+      - destroy
+
+  # ── ABONNEMENT ────────────────────────────────────────────
+  - name: subscription_name
+    displayName: "📋 Abonnement Azure"
+    type: string
+    default: "MIC-SECOPS-DEV"
+    values:
+      - "MIC-SECOPS-DEV"
+      - "MIC-SECOPS-TEST"
+      - "MIC-SECOPS-STAGING"
+      - "MIC-SECOPS-PROD"
+
+  # ── NOM DU RESOURCE GROUP ─────────────────────────────────
+  - name: rg_name_prefix
+    displayName: "🏷️ Préfixe du nom (format: PREFIX-rg-ENV)"
+    type: string
+    default: "mic"
+
+  # ── RÉGION ────────────────────────────────────────────────
+  - name: location
+    displayName: "🌍 Région (Region)"
+    type: string
+    default: "West Europe"
+    values:
+      # Europe
+      - "West Europe"
+      - "North Europe"
+      - "France Central"
+      - "France South"
+      - "Germany West Central"
+      - "Switzerland North"
+      - "UK South"
+      - "UK West"
+      - "Sweden Central"
+      - "Norway East"
+      # Amériques
+      - "East US"
+      - "East US 2"
+      - "West US"
+      - "West US 2"
+      - "Central US"
+      - "Canada Central"
+      - "Canada East"
+      # Asie / Pacifique
+      - "Southeast Asia"
+      - "East Asia"
+      - "Australia East"
+      - "Japan East"
+
+  # ── ENVIRONNEMENT ─────────────────────────────────────────
+  - name: environment
+    displayName: "🌐 Environnement"
+    type: string
+    default: "dev"
+    values:
+      - "dev"
+      - "test"
+      - "staging"
+      - "prod"
+      - "sandbox"
+      - "poc"
+
+  # ─────────────────────────────────────────────────────────
+  # TAGS (comme dans l'onglet "Tags" du portail Azure)
+  # ─────────────────────────────────────────────────────────
+
+  - name: tag_owner
+    displayName: "🏷️ Tag – Owner (équipe propriétaire)"
+    type: string
+    default: "MIC-SECOPS"
+    values:
+      - "MIC-SECOPS"
+      - "MIC-IDP"
+      - "NTT-DATA"
+      - "Mercedes-Benz"
+      - "Platform-Team"
+      - "DevOps-Team"
+
+  - name: tag_project
+    displayName: "🏷️ Tag – Project"
+    type: string
+    default: "IDP-PFE"
+    values:
+      - "IDP-PFE"
+      - "Mail-API"
+      - "PKI"
+      - "DNS"
+      - "TokenMaster"
+      - "SIEM"
+      - "Platform"
+
+  - name: tag_cost_center
+    displayName: "🏷️ Tag – Cost Center"
+    type: string
+    default: "MIC-001"
+    values:
+      - "MIC-001"
+      - "MIC-002"
+      - "SECOPS-100"
+      - "INFRA-200"
+      - "RD-300"
+
+  - name: tag_managed_by
+    displayName: "🏷️ Tag – Managed By"
+    type: string
+    default: "Terraform"
+    values:
+      - "Terraform"
+      - "OpenTofu"
+      - "Bicep"
+      - "Manual"
+
+  - name: tag_criticality
+    displayName: "🏷️ Tag – Criticality"
+    type: string
+    default: "Medium"
+    values:
+      - "Low"
+      - "Medium"
+      - "High"
+      - "Critical"
+
+  - name: tag_data_classification
+    displayName: "🏷️ Tag – Data Classification"
+    type: string
+    default: "Internal"
+    values:
+      - "Public"
+      - "Internal"
+      - "Confidential"
+      - "Restricted"
+
+variables:
+  TF_VERSION: "1.14.5"
+  TF_WORKING_DIR: "pipelines/resource-group"
+  SUBSCRIPTION_ID: "0b86b0f9-d3f5-4387-8003-3b8955b9e8fa"
+
+stages:
+
+# ── STAGE 0 : SETUP BACKEND (automatique, sans commandes manuelles) ──
+- stage: SetupBackend
+  displayName: "0 🗄️ Préparer le backend Terraform"
+  jobs:
+  - job: CreateBackend
+    pool:
+      vmImage: "ubuntu-latest"
+    steps:
+    - checkout: self
+
+    - task: AzureCLI@2
+      displayName: "⚙️ Créer le backend Terraform automatiquement"
+      inputs:
+        azureSubscription: "MIC-IDP"
+        scriptType: "bash"
+        scriptLocation: "inlineScript"
+        inlineScript: |
+          echo "=== Vérification/création du backend Terraform ==="
+
+          # Resource Group du backend
+          RG_EXISTS=$(az group exists --name rg-terraform-state)
+          if [ "$RG_EXISTS" = "false" ]; then
+            echo "📁 Création du Resource Group backend..."
+            az group create --name rg-terraform-state --location "West Europe" \
+              --tags ManagedBy=Terraform Project=IDP-Backend
+          else
+            echo "✅ RG backend existant."
+          fi
+
+          # Storage Account du backend
+          SA_EXISTS=$(az storage account check-name --name pfetfstate --query nameAvailable -o tsv)
+          if [ "$SA_EXISTS" = "true" ]; then
+            echo "📦 Création du Storage Account backend..."
+            az storage account create \
+              --name pfetfstate \
+              --resource-group rg-terraform-state \
+              --sku Standard_LRS \
+              --kind StorageV2 \
+              --min-tls-version TLS1_2 \
+              --allow-blob-public-access false
+          else
+            echo "✅ Storage Account existant."
+          fi
+
+          # Container tfstate
+          CONTAINER=$(az storage container exists \
+            --name tfstate --account-name pfetfstate \
+            --query exists -o tsv 2>/dev/null || echo "false")
+          if [ "$CONTAINER" = "false" ]; then
+            echo "🗂️  Création du container tfstate..."
+            az storage container create --name tfstate --account-name pfetfstate
+          else
+            echo "✅ Container tfstate existant."
+          fi
+
+          echo ""
+          echo "=========================================="
+          echo "  ✅ Backend Terraform prêt !"
+          echo "=========================================="
+
+# ── STAGE 1 : VALIDATE ──────────────────────────────────────
+- stage: Validate
+  displayName: "1 ✅ Validation"
+  dependsOn: SetupBackend
+  jobs:
+  - job: Validate
+    pool:
+      vmImage: "ubuntu-latest"
+    steps:
+    - checkout: self
+
+    - script: |
+        wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
+        unzip -q terraform_$(TF_VERSION)_linux_amd64.zip
+        sudo mv terraform /usr/local/bin/
+        terraform version
+      displayName: "📦 Installer Terraform"
+
+    - script: |
+        cd $(TF_WORKING_DIR)
+        terraform init -backend=false
+        terraform validate
+      displayName: "🔍 Terraform Validate"
+
+# ── STAGE 2 : PLAN ──────────────────────────────────────────
+- stage: Plan
+  displayName: "2 📋 Plan (aperçu)"
+  dependsOn: Validate
+  jobs:
+  - job: Plan
+    pool:
+      vmImage: "ubuntu-latest"
+    steps:
+    - checkout: self
+
+    - script: |
+        wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
+        unzip -q terraform_$(TF_VERSION)_linux_amd64.zip
+        sudo mv terraform /usr/local/bin/
+      displayName: "📦 Installer Terraform"
+
+    - task: AzureCLI@2
+      displayName: "🔗 Terraform Init + Plan"
+      inputs:
+        azureSubscription: "MIC-IDP"
+        scriptType: "bash"
+        scriptLocation: "inlineScript"
+        addSpnToEnvironment: true
+        inlineScript: |
+          export ARM_CLIENT_ID=$servicePrincipalId
+          export ARM_CLIENT_SECRET=$servicePrincipalKey
+          export ARM_TENANT_ID=$tenantId
+          export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+
+          cd $(TF_WORKING_DIR)
+          terraform init
+
+          terraform plan \
+            -var="subscription_id=$(SUBSCRIPTION_ID)" \
+            -var="prefix=${{ parameters.rg_name_prefix }}" \
+            -var="environment=${{ parameters.environment }}" \
+            -var="location=${{ parameters.location }}" \
+            -var="owner=${{ parameters.tag_owner }}" \
+            -var="tag_project=${{ parameters.tag_project }}" \
+            -var="tag_cost_center=${{ parameters.tag_cost_center }}" \
+            -var="tag_managed_by=${{ parameters.tag_managed_by }}" \
+            -var="tag_criticality=${{ parameters.tag_criticality }}" \
+            -var="tag_data_classification=${{ parameters.tag_data_classification }}" \
+            -out=$(Build.ArtifactStagingDirectory)/tfplan
+
+    - publish: $(Build.ArtifactStagingDirectory)/tfplan
+      artifact: tfplan-rg
+
+# ── STAGE 3 : APPLY ─────────────────────────────────────────
+- stage: Apply
+  displayName: "3 🚀 Apply (créer Resource Group)"
+  dependsOn: Plan
+  condition: and(succeeded(), eq('${{ parameters.action }}', 'apply'))
+  jobs:
+  - deployment: Apply
+    environment: "azure-pfe"
+    pool:
+      vmImage: "ubuntu-latest"
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+
+          - script: |
+              wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
+              unzip -q terraform_$(TF_VERSION)_linux_amd64.zip
+              sudo mv terraform /usr/local/bin/
+            displayName: "📦 Installer Terraform"
+
+          - task: AzureCLI@2
+            displayName: "✅ Terraform Apply"
+            inputs:
+              azureSubscription: "MIC-IDP"
+              scriptType: "bash"
+              scriptLocation: "inlineScript"
+              addSpnToEnvironment: true
+              inlineScript: |
+                export ARM_CLIENT_ID=$servicePrincipalId
+                export ARM_CLIENT_SECRET=$servicePrincipalKey
+                export ARM_TENANT_ID=$tenantId
+                export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+
+                cd $(TF_WORKING_DIR)
+                terraform init
+                terraform apply -auto-approve \
+                  $(Pipeline.Workspace)/tfplan-rg/tfplan
+
+                echo ""
+                echo "============================================"
+                echo "  ✅ Resource Group créé avec succès !"
+                echo "  📍 Nom: ${{ parameters.rg_name_prefix }}-rg-${{ parameters.environment }}"
+                echo "  🌍 Région: ${{ parameters.location }}"
+                echo "  🏷️  Tags: Owner=${{ parameters.tag_owner }}"
+                echo "   Project=${{ parameters.tag_project }}"
+                echo "   CostCenter=${{ parameters.tag_cost_center }}"
+                echo "   Criticality=${{ parameters.tag_criticality }}"
+                echo "============================================"
+                terraform output
+
+# ── STAGE 4 : DESTROY ───────────────────────────────────────
+- stage: Destroy
+  displayName: "4 🗑️ Destroy (supprimer Resource Group)"
+  dependsOn: []
+  condition: eq('${{ parameters.action }}', 'destroy')
+  jobs:
+  - deployment: Destroy
+    environment: "azure-pfe"
+    pool:
+      vmImage: "ubuntu-latest"
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+
+          - script: |
+              wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
+              unzip -q terraform_$(TF_VERSION)_linux_amd64.zip
+              sudo mv terraform /usr/local/bin/
+            displayName: "📦 Installer Terraform"
+
+          - task: AzureCLI@2
+            displayName: "🗑️ Terraform Destroy"
+            inputs:
+              azureSubscription: "MIC-IDP"
+              scriptType: "bash"
+              scriptLocation: "inlineScript"
+              addSpnToEnvironment: true
+              inlineScript: |
+                export ARM_CLIENT_ID=$servicePrincipalId
+                export ARM_CLIENT_SECRET=$servicePrincipalKey
+                export ARM_TENANT_ID=$tenantId
+                export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+
+                cd $(TF_WORKING_DIR)
+                terraform init
+                terraform destroy -auto-approve \
+                  -var="subscription_id=$(SUBSCRIPTION_ID)" \
+                  -var="prefix=${{ parameters.rg_name_prefix }}" \
+                  -var="environment=${{ parameters.environment }}" \
+                  -var="location=${{ parameters.location }}" \
+                  -var="owner=${{ parameters.tag_owner }}" \
+                  -var="tag_project=${{ parameters.tag_project }}" \
+                  -var="tag_cost_center=${{ parameters.tag_cost_center }}" \
+                  -var="tag_managed_by=${{ parameters.tag_managed_by }}" \
+                  -var="tag_criticality=${{ parameters.tag_criticality }}" \
+                  -var="tag_data_classification=${{ parameters.tag_data_classification }}"

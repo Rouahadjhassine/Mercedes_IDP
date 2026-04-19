@@ -1,0 +1,16 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ${{ values.component_id | dump }}
+  description: ${{ values.description | dump }}
+  annotations:
+    # Intégration Azure DevOps CI/CD pour visualiser le pipeline dans Backstage
+    dev.azure.com/project-repo: ${{ values.ado_project }}/${{ values.repo_name }}
+  tags:
+    - terraform
+    - infra
+    - azure
+spec:
+  type: service
+  lifecycle: experimental
+  owner: ${{ values.owner | dump }}

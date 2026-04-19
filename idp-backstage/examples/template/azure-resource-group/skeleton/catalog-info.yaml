@@ -1,0 +1,25 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ${{ values.component_id }}
+  title: "🏗️ RG – ${{ values.rg_prefix }}-rg-${{ values.environment }}"
+  description: ${{ values.description | dump }}
+  annotations:
+    dev.azure.com/project: "${{ values.ado_project }}"
+    dev.azure.com/project-repo: "${{ values.ado_project }}/${{ values.repo_name }}"
+    azure.com/resource-type: "resource-group"
+    azure.com/rg-name: "${{ values.rg_prefix }}-rg-${{ values.environment }}"
+    azure.com/rg-prefix: "${{ values.rg_prefix }}"
+    azure.com/rg-environment: "${{ values.environment }}"
+    azure.com/location: "${{ values.location }}"
+    azure.com/tag-owner: "${{ values.tag_owner }}"
+    azure.com/tag-project: "${{ values.tag_project }}"
+    azure.com/tag-criticality: "${{ values.tag_criticality }}"
+  tags:
+    - azure
+    - resource-group
+    - terraform
+spec:
+  type: azure-resource-group
+  lifecycle: experimental
+  owner: ${{ values.owner }}

@@ -1,0 +1,138 @@
+trigger:
+  - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  TF_VERSION: "1.14.5"
+  # -------------------------------------------------------------
+  # Variables statiques injectées depuis Backstage
+  # -------------------------------------------------------------
+  SUBSCRIPTION_ID: "${{ values.subscription_id }}"
+  COMPONENT_ID: "${{ values.component_id }}"
+  PREFIX: "${{ values.prefix }}"
+  ENVIRONMENT: "${{ values.environment }}"
+  LOCATION: "${{ values.location }}"
+  
+  VM_SIZE: "${{ values.vm_size }}"
+  VM_OS_IMAGE: "${{ values.vm_os_image }}"
+  STORAGE_TIER: "${{ values.storage_account_tier }}"
+  STORAGE_KIND: "${{ values.storage_kind }}"
+  KV_SKU: "${{ values.keyvault_sku }}"
+
+stages:
+- stage: Deploy_Infrastructure
+  displayName: "🚀 Déploiement Automatisé IDP"
+  jobs:
+  - job: DeployAll
+    displayName: "Terraform Apply (RG -> Storage -> KV -> VM)"
+    steps:
+    - checkout: self
+
+    - task: AzureCLI@2
+      displayName: "🔑 Préparation & Installation"
+      inputs:
+        azureSubscription: "MIC-IDP" # Assurez-vous que cette connexion de service existe sur ADO
+        scriptType: "bash"
+        scriptLocation: "inlineScript"
+        addSpnToEnvironment: true
+        inlineScript: |
+          wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
+          unzip -q terraform_$(TF_VERSION)_linux_amd64.zip
+          sudo mv terraform /usr/local/bin/
+
+          # Export des credentials pour le provider AzureRM
+          export ARM_CLIENT_ID=$servicePrincipalId
+          export ARM_CLIENT_SECRET=$servicePrincipalKey
+          export ARM_TENANT_ID=$tenantId
+          export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+
+    # 1. RESOURCE GROUP
+    - task: AzureCLI@2
+      displayName: "📁 1. Déploiement Resource Group"
+      inputs:
+        azureSubscription: "MIC-IDP"
+        scriptType: "bash"
+        scriptLocation: "inlineScript"
+        addSpnToEnvironment: true
+        inlineScript: |
+          export ARM_CLIENT_ID=$servicePrincipalId
+          export ARM_CLIENT_SECRET=$servicePrincipalKey
+          export ARM_TENANT_ID=$tenantId
+          export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+          
+          cd pipelines/resource-group
+          # On isole l'état Terraform pour chaque instance générée !
+          terraform init -backend-config="key=$(COMPONENT_ID)-rg.tfstate"
+          
+          terraform apply -auto-approve \
+            -var="subscription_id=$(SUBSCRIPTION_ID)" \
+            -var="prefix=$(PREFIX)" \
+            -var="environment=$(ENVIRONMENT)" \
+            -var="location=$(LOCATION)"
+
+    # 2. STORAGE
+    - task: AzureCLI@2
+      displayName: "💾 2. Déploiement Storage"
+      inputs:
+        azureSubscription: "MIC-IDP"
+        scriptType: "bash"
+        scriptLocation: "inlineScript"
+        addSpnToEnvironment: true
+        inlineScript: |
+          export ARM_CLIENT_ID=$servicePrincipalId
+          export ARM_CLIENT_SECRET=$servicePrincipalKey
+          export ARM_TENANT_ID=$tenantId
+          export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+          
+          cd pipelines/storage
+          terraform init -backend-config="key=$(COMPONENT_ID)-storage.tfstate"
+          
+          terraform apply -auto-approve \
+            -var="subscription_id=$(SUBSCRIPTION_ID)" \
+            -var="storage_account_tier=$(STORAGE_TIER)" \
+            -var="storage_kind=$(STORAGE_KIND)"
+
+    # 3. KEYVAULT
+    - task: AzureCLI@2
+      displayName: "🔐 3. Déploiement KeyVault"
+      inputs:
+        azureSubscription: "MIC-IDP"
+        scriptType: "bash"
+        scriptLocation: "inlineScript"
+        addSpnToEnvironment: true
+        inlineScript: |
+          export ARM_CLIENT_ID=$servicePrincipalId
+          export ARM_CLIENT_SECRET=$servicePrincipalKey
+          export ARM_TENANT_ID=$tenantId
+          export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+          
+          cd pipelines/keyvault
+          terraform init -backend-config="key=$(COMPONENT_ID)-kv.tfstate"
+          
+          terraform apply -auto-approve \
+            -var="subscription_id=$(SUBSCRIPTION_ID)" \
+            -var="keyvault_sku=$(KV_SKU)"
+
+    # 4. VM
+    - task: AzureCLI@2
+      displayName: "💻 4. Déploiement Virtual Machine"
+      inputs:
+        azureSubscription: "MIC-IDP"
+        scriptType: "bash"
+        scriptLocation: "inlineScript"
+        addSpnToEnvironment: true
+        inlineScript: |
+          export ARM_CLIENT_ID=$servicePrincipalId
+          export ARM_CLIENT_SECRET=$servicePrincipalKey
+          export ARM_TENANT_ID=$tenantId
+          export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+          
+          cd pipelines/vm
+          terraform init -backend-config="key=$(COMPONENT_ID)-vm.tfstate"
+          
+          terraform apply -auto-approve \
+            -var="subscription_id=$(SUBSCRIPTION_ID)" \
+            -var="vm_size=$(VM_SIZE)" \
+            -var="vm_os_image=$(VM_OS_IMAGE)"

@@ -279,24 +279,14 @@ stages:
           export ARM_TENANT_ID=$tenantId
           export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
 
-          # ── Guard: reject empty parameters ───────────────────
+          # ── Guard: fallback si paramètres vides ─────────────────
           LOCATION="${{ parameters.location }}"
           PREFIX="${{ parameters.rg_name_prefix }}"
           ENV="${{ parameters.environment }}"
-
-          if [ -z "$LOCATION" ]; then
-            echo "##[error] 'location' parameter is empty. Ensure the pipeline is triggered with templateParameters."
-            exit 1
-          fi
-          if [ -z "$PREFIX" ]; then
-            echo "##[error] 'rg_name_prefix' parameter is empty. Using default: mic"
-            PREFIX="mic"
-          fi
-          if [ -z "$ENV" ]; then
-            echo "##[error] 'environment' parameter is empty. Using default: dev"
-            ENV="dev"
-          fi
-          # ─────────────────────────────────────────────────────
+          [ -z "$LOCATION" ] && LOCATION="West Europe"
+          [ -z "$PREFIX" ]   && PREFIX="mic"
+          [ -z "$ENV" ]      && ENV="dev"
+          # ───────────────────────────────────────────────────────
 
           cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)
           terraform init

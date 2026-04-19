@@ -229,7 +229,7 @@ spec:
         organization: ${{ parameters.ado_org }}
         project: ${{ parameters.ado_project }}
         repo: ${{ parameters.repo_name }}
-        pipelineName: pipeline-resource-group
+        pipelineName: pipeline-resource-group-${{ parameters.repo_name }}
         yamlPath: pipeline-resource-group.yml
         templateParameters:
           action: apply

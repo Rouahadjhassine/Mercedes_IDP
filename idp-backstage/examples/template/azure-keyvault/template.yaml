@@ -306,7 +306,7 @@ spec:
         organization: ${{ parameters.ado_org }}
         project: ${{ parameters.ado_project }}
         repo: ${{ parameters.repo_name }}
-        pipelineName: pipeline-keyvault
+        pipelineName: pipeline-keyvault-${{ parameters.repo_name }}
         yamlPath: pipeline-keyvault.yml
         templateParameters:
           action: apply

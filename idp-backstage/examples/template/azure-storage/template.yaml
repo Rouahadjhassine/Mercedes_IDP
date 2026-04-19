@@ -300,7 +300,7 @@ spec:
         organization: ${{ parameters.ado_org }}
         project: ${{ parameters.ado_project }}
         repo: ${{ parameters.repo_name }}
-        pipelineName: pipeline-storage
+        pipelineName: pipeline-storage-${{ parameters.repo_name }}
         yamlPath: pipeline-storage.yml
         templateParameters:
           action: apply

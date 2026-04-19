@@ -281,11 +281,20 @@ stages:
           export ARM_TENANT_ID=$tenantId
           export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
 
+          # ── Guard: fallback si paramètres vides ─────────────────
+          RG_PREFIX="${{ parameters.rg_prefix }}"
+          RG_ENV="${{ parameters.rg_environment }}"
+          [ -z "$RG_PREFIX" ] && RG_PREFIX="mic"
+          [ -z "$RG_ENV" ]    && RG_ENV="dev"
+          # ───────────────────────────────────────────────
+
           cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)
           terraform init
 
           terraform plan \
             -var="subscription_id=$(SUBSCRIPTION_ID)" \
+            -var="prefix=$RG_PREFIX" \
+            -var="environment=$RG_ENV" \
             -var="storage_account_tier=${{ parameters.storage_account_tier }}" \
             -var="storage_replication_type=${{ parameters.storage_replication_type }}" \
             -var="storage_access_tier=${{ parameters.storage_access_tier }}" \
@@ -390,10 +399,19 @@ stages:
                 export ARM_TENANT_ID=$tenantId
                 export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
 
+                # ── Guard: fallback si paramètres vides ─────────────────
+                RG_PREFIX="${{ parameters.rg_prefix }}"
+                RG_ENV="${{ parameters.rg_environment }}"
+                [ -z "$RG_PREFIX" ] && RG_PREFIX="mic"
+                [ -z "$RG_ENV" ]    && RG_ENV="dev"
+                # ───────────────────────────────────────────────
+
                 cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)
                 terraform init
                 terraform destroy -auto-approve \
                   -var="subscription_id=$(SUBSCRIPTION_ID)" \
+                  -var="prefix=$RG_PREFIX" \
+                  -var="environment=$RG_ENV" \
                   -var="storage_account_tier=${{ parameters.storage_account_tier }}" \
                   -var="storage_replication_type=${{ parameters.storage_replication_type }}" \
                   -var="storage_access_tier=${{ parameters.storage_access_tier }}" \

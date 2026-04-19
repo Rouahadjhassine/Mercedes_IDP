@@ -7,18 +7,30 @@ variable "prefix" {
   description = "Préfixe pour nommer le Resource Group (ex: mic-rg-dev)"
   type        = string
   default     = "mic"
+  validation {
+    condition     = length(var.prefix) >= 2 && length(var.prefix) <= 10
+    error_message = "Le préfixe doit avoir entre 2 et 10 caractères (non vide)."
+  }
 }
 
 variable "environment" {
   description = "Environnement cible"
   type        = string
   default     = "dev"
+  validation {
+    condition     = contains(["dev", "test", "staging", "prod", "sandbox", "poc"], var.environment)
+    error_message = "Environnement invalide. Choix: dev | test | staging | prod | sandbox | poc"
+  }
 }
 
 variable "location" {
   description = "Région Azure"
   type        = string
   default     = "West Europe"
+  validation {
+    condition     = length(var.location) > 0
+    error_message = "La région Azure ne peut pas être vide."
+  }
 }
 
 variable "owner" {

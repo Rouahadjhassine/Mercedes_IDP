@@ -279,14 +279,33 @@ stages:
           export ARM_TENANT_ID=$tenantId
           export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
 
+          # ── Guard: reject empty parameters ───────────────────
+          LOCATION="${{ parameters.location }}"
+          PREFIX="${{ parameters.rg_name_prefix }}"
+          ENV="${{ parameters.environment }}"
+
+          if [ -z "$LOCATION" ]; then
+            echo "##[error] 'location' parameter is empty. Ensure the pipeline is triggered with templateParameters."
+            exit 1
+          fi
+          if [ -z "$PREFIX" ]; then
+            echo "##[error] 'rg_name_prefix' parameter is empty. Using default: mic"
+            PREFIX="mic"
+          fi
+          if [ -z "$ENV" ]; then
+            echo "##[error] 'environment' parameter is empty. Using default: dev"
+            ENV="dev"
+          fi
+          # ─────────────────────────────────────────────────────
+
           cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)
           terraform init
 
           terraform plan \
             -var="subscription_id=$(SUBSCRIPTION_ID)" \
-            -var="prefix=${{ parameters.rg_name_prefix }}" \
-            -var="environment=${{ parameters.environment }}" \
-            -var="location=${{ parameters.location }}" \
+            -var="prefix=$PREFIX" \
+            -var="environment=$ENV" \
+            -var="location=$LOCATION" \
             -var="owner=${{ parameters.tag_owner }}" \
             -var="tag_project=${{ parameters.tag_project }}" \
             -var="tag_cost_center=${{ parameters.tag_cost_center }}" \
@@ -391,13 +410,22 @@ stages:
                 export ARM_TENANT_ID=$tenantId
                 export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
 
+                # ── Guard: reject empty parameters ───────────────────
+                LOCATION="${{ parameters.location }}"
+                PREFIX="${{ parameters.rg_name_prefix }}"
+                ENV="${{ parameters.environment }}"
+                [ -z "$LOCATION" ] && LOCATION="West Europe"
+                [ -z "$PREFIX" ]   && PREFIX="mic"
+                [ -z "$ENV" ]      && ENV="dev"
+                # ─────────────────────────────────────────────────────
+
                 cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)
                 terraform init
                 terraform destroy -auto-approve \
                   -var="subscription_id=$(SUBSCRIPTION_ID)" \
-                  -var="prefix=${{ parameters.rg_name_prefix }}" \
-                  -var="environment=${{ parameters.environment }}" \
-                  -var="location=${{ parameters.location }}" \
+                  -var="prefix=$PREFIX" \
+                  -var="environment=$ENV" \
+                  -var="location=$LOCATION" \
                   -var="owner=${{ parameters.tag_owner }}" \
                   -var="tag_project=${{ parameters.tag_project }}" \
                   -var="tag_cost_center=${{ parameters.tag_cost_center }}" \

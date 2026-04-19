@@ -29,6 +29,7 @@ stages:
     displayName: "Terraform Apply (RG -> Storage -> KV -> VM)"
     steps:
     - checkout: self
+    - checkout: git://IDP-MIC/IDP-MIC
 
     - task: AzureCLI@2
       displayName: "🔑 Préparation & Installation"

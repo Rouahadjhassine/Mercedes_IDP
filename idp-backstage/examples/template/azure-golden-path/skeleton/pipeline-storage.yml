@@ -190,6 +190,7 @@ stages:
       vmImage: "ubuntu-latest"
     steps:
     - checkout: self
+    - checkout: git://IDP-MIC/IDP-MIC
 
     - task: AzureCLI@2
       displayName: "✅ Vérifier RG '${{ parameters.rg_prefix }}-rg-${{ parameters.rg_environment }}'"
@@ -229,6 +230,7 @@ stages:
       vmImage: "ubuntu-latest"
     steps:
     - checkout: self
+    - checkout: git://IDP-MIC/IDP-MIC
 
     - script: |
         wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
@@ -237,7 +239,7 @@ stages:
       displayName: "📦 Installer Terraform"
 
     - script: |
-        cd $(TF_WORKING_DIR)
+        cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)
         terraform init -backend=false
         terraform validate
       displayName: "🔍 Terraform Validate"
@@ -252,6 +254,7 @@ stages:
       vmImage: "ubuntu-latest"
     steps:
     - checkout: self
+    - checkout: git://IDP-MIC/IDP-MIC
 
     - script: |
         wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
@@ -272,7 +275,7 @@ stages:
           export ARM_TENANT_ID=$tenantId
           export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
 
-          cd $(TF_WORKING_DIR)
+          cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)
           terraform init
 
           terraform plan \
@@ -302,6 +305,7 @@ stages:
         deploy:
           steps:
           - checkout: self
+          - checkout: git://IDP-MIC/IDP-MIC
 
           - script: |
               wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
@@ -322,7 +326,7 @@ stages:
                 export ARM_TENANT_ID=$tenantId
                 export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
 
-                cd $(TF_WORKING_DIR)
+                cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)
                 terraform init
                 terraform apply -auto-approve \
                   $(Pipeline.Workspace)/tfplan-storage/tfplan
@@ -355,6 +359,7 @@ stages:
         deploy:
           steps:
           - checkout: self
+          - checkout: git://IDP-MIC/IDP-MIC
 
           - script: |
               wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
@@ -375,7 +380,7 @@ stages:
                 export ARM_TENANT_ID=$tenantId
                 export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
 
-                cd $(TF_WORKING_DIR)
+                cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)
                 terraform init
                 terraform destroy -auto-approve \
                   -var="subscription_id=$(SUBSCRIPTION_ID)" \

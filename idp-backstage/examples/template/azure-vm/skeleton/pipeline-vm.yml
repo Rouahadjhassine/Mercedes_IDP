@@ -14,21 +14,21 @@ parameters:
     default: apply
     values: [plan, apply, destroy]
 
-  - name: rg_name_prefix
-    displayName: "🏷️ Préfixe du Resource Group (ex: 'mic')"
+  - name: rg_prefix
+    displayName: "📁 [Resource Group] Préfixe du RG cible"
     type: string
-    default: "${{ values.rg_prefix }}"
+    default: "mic"
 
-  - name: environment
-    displayName: "🌐 Environnement du Resource Group"
+  - name: rg_environment
+    displayName: "📁 [Resource Group] Environnement du RG cible"
     type: string
-    default: "${{ values.rg_environment }}"
+    default: "dev"
     values: ["dev", "test", "staging", "prod", "sandbox", "poc"]
 
   - name: location
-    displayName: "🌍 Région Azure (doit correspondre au Resource Group)"
+    displayName: "🌍 [Basics] Région (Region)"
     type: string
-    default: "${{ values.location }}"
+    default: "West Europe"
     values:
       - "West Europe"
       - "North Europe"
@@ -48,21 +48,21 @@ parameters:
       - "Japan East"
 
   - name: vm_count
-    displayName: "🔢 Nombre d'instances"
+    displayName: "🔢 [Basics] Nombre d'instances VM"
     type: number
-    default: ${{ values.vm_count }}
+    default: 1
     values: [1, 2, 3, 4, 5]
 
   - name: vm_os_type
-    displayName: "💻 Famille OS"
+    displayName: "💻 [Image] Famille OS"
     type: string
-    default: "${{ values.vm_os_type }}"
+    default: "windows"
     values: ["windows", "linux"]
 
   - name: vm_os_image
-    displayName: "🖼️ Image OS"
+    displayName: "🖼️ [Image] Image OS"
     type: string
-    default: "${{ values.vm_os_image }}"
+    default: "WindowsServer2022"
     values:
       - "WindowsServer2022"
       - "WindowsServer2019"
@@ -72,9 +72,9 @@ parameters:
       - "RedHat9"
 
   - name: vm_size
-    displayName: "📐 Taille de la VM"
+    displayName: "📐 [Size] Taille de la VM"
     type: string
-    default: "${{ values.vm_size }}"
+    default: "Standard_B2s"
     values:
       - "Standard_B1s"
       - "Standard_B2s"
@@ -88,9 +88,9 @@ parameters:
       - "Standard_F4s_v2"
 
   - name: vm_disk_type
-    displayName: "💾 Type de disque OS"
+    displayName: "💾 [Disks] Type de disque OS"
     type: string
-    default: "${{ values.vm_disk_type }}"
+    default: "Standard_LRS"
     values:
       - "Standard_LRS"
       - "StandardSSD_LRS"

@@ -22,15 +22,15 @@ parameters:
   # SECTION 1 – RESOURCE GROUP CIBLE
   # ═══════════════════════════════════════════════════════════
 
-  - name: rg_name_prefix
-    displayName: "🏷️ Préfixe du Resource Group (ex: 'mic')"
+  - name: rg_prefix
+    displayName: "📁 [Resource Group] Préfixe du RG cible"
     type: string
-    default: "${{ values.rg_prefix }}"
+    default: "mic"
 
-  - name: environment
-    displayName: "🌐 Environnement du Resource Group"
+  - name: rg_environment
+    displayName: "📁 [Resource Group] Environnement du RG cible"
     type: string
-    default: "${{ values.environment }}"
+    default: "dev"
     values:
       - "dev"
       - "test"
@@ -44,9 +44,9 @@ parameters:
   # ═══════════════════════════════════════════════════════════
 
   - name: location
-    displayName: "🌍 Région Azure (doit correspondre au Resource Group)"
+    displayName: "🌍 [Basics] Région"
     type: string
-    default: "${{ values.location }}"
+    default: "West Europe"
     values:
       - "West Europe"
       - "North Europe"
@@ -66,9 +66,9 @@ parameters:
       - "Japan East"
 
   - name: storage_kind
-    displayName: "📦 Storage Kind"
+    displayName: "📦 [Basics] Type de Storage (Kind)"
     type: string
-    default: "${{ values.storage_kind }}"
+    default: "StorageV2"
     values:
       - "StorageV2"      # Recommandé – usage général v2
       - "BlobStorage"    # Blob uniquement
@@ -76,9 +76,9 @@ parameters:
       - "BlockBlobStorage" # Blob blocs haute performance
 
   - name: storage_account_tier
-    displayName: "💲 Account Tier (Performance)"
+    displayName: "💲 [Basics] Performance"
     type: string
-    default: "${{ values.storage_account_tier }}"
+    default: "Standard"
     values:
       - "Standard"   # Disques HDD (usage général)
       - "Premium"    # SSD (latence faible)
@@ -88,9 +88,9 @@ parameters:
   # ═══════════════════════════════════════════════════════════
 
   - name: storage_replication_type
-    displayName: "🔁 Replication Type (Redondance)"
+    displayName: "🔁 [Redundancy] Réplication"
     type: string
-    default: "${{ values.storage_replication_type }}"
+    default: "LRS"
     values:
       - "LRS"    # Locally Redundant Storage (même datacenter)
       - "ZRS"    # Zone Redundant Storage (3 zones)
@@ -104,18 +104,18 @@ parameters:
   # ═══════════════════════════════════════════════════════════
 
   - name: storage_access_tier
-    displayName: "🌡️ Access Tier (Pour BlobStorage & Gen2)"
+    displayName: "🌡️ [Advanced] Access Tier (pour Blob)"
     type: string
-    default: "${{ values.storage_access_tier }}"
+    default: "Hot"
     values:
       - "Hot"      # Accès fréquent (coût stockage haut, accès bas)
       - "Cool"     # Accès infrequent (30 jours min)
       - "Archive"  # Archivage long terme (180 jours min)
 
   - name: storage_retention_days
-    displayName: "🗓️ Retention Period (Days)"
+    displayName: "🗓️ [Advanced] Rétention soft delete (jours)"
     type: number
-    default: ${{ values.storage_retention_days }}
+    default: 7
     values:
       - 7
       - 14

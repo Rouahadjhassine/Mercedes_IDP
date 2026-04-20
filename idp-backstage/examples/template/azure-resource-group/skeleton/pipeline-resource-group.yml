@@ -33,13 +33,13 @@ parameters:
   - name: rg_name_prefix
     displayName: "🏷️ Préfixe court SEULEMENT (ex: 'mic', 'tt', 'pfe' → donnera PREFIX-rg-ENV)"
     type: string
-    default: "mic"
+    default: "${{ values.rg_prefix }}"
 
   # ── RÉGION ────────────────────────────────────────────────
   - name: location
     displayName: "🌍 Région (Region)"
     type: string
-    default: "West Europe"
+    default: "${{ values.location }}"
     values:
       # Europe
       - "West Europe"
@@ -70,7 +70,7 @@ parameters:
   - name: environment
     displayName: "🌐 Environnement"
     type: string
-    default: "dev"
+    default: "${{ values.environment }}"
     values:
       - "dev"
       - "test"
@@ -86,7 +86,7 @@ parameters:
   - name: tag_owner
     displayName: "🏷️ Tag – Owner (équipe propriétaire)"
     type: string
-    default: "MIC-SECOPS"
+    default: "${{ values.tag_owner }}"
     values:
       - "MIC-SECOPS"
       - "MIC-IDP"
@@ -98,7 +98,7 @@ parameters:
   - name: tag_project
     displayName: "🏷️ Tag – Project"
     type: string
-    default: "IDP-PFE"
+    default: "${{ values.tag_project }}"
     values:
       - "IDP-PFE"
       - "Mail-API"
@@ -111,7 +111,7 @@ parameters:
   - name: tag_cost_center
     displayName: "🏷️ Tag – Cost Center"
     type: string
-    default: "MIC-001"
+    default: "${{ values.tag_cost_center }}"
     values:
       - "MIC-001"
       - "MIC-002"
@@ -122,7 +122,7 @@ parameters:
   - name: tag_managed_by
     displayName: "🏷️ Tag – Managed By"
     type: string
-    default: "Terraform"
+    default: "${{ values.tag_managed_by }}"
     values:
       - "Terraform"
       - "OpenTofu"
@@ -132,7 +132,7 @@ parameters:
   - name: tag_criticality
     displayName: "🏷️ Tag – Criticality"
     type: string
-    default: "Medium"
+    default: "${{ values.tag_criticality }}"
     values:
       - "Low"
       - "Medium"
@@ -142,7 +142,7 @@ parameters:
   - name: tag_data_classification
     displayName: "🏷️ Tag – Data Classification"
     type: string
-    default: "Internal"
+    default: "${{ values.tag_data_classification }}"
     values:
       - "Public"
       - "Internal"

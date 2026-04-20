@@ -14,21 +14,21 @@ parameters:
     default: apply
     values: [plan, apply, destroy]
 
-  - name: rg_prefix
-    displayName: "📁 [Resource Group] Préfixe du RG cible"
+  - name: rg_name_prefix
+    displayName: "🏷️ Préfixe du Resource Group (ex: 'mic')"
     type: string
-    default: "mic"
+    default: "${{ values.rg_prefix }}"
 
-  - name: rg_environment
-    displayName: "📁 [Resource Group] Environnement du RG cible"
+  - name: environment
+    displayName: "🌐 Environnement du Resource Group"
     type: string
-    default: "dev"
+    default: "${{ values.environment }}"
     values: ["dev", "test", "staging", "prod", "sandbox", "poc"]
 
   - name: link_storage
-    displayName: "🔗 [Storage] Lier au Storage Account existant ?"
+    displayName: "🔗 Link Storage Account"
     type: boolean
-    default: true
+    default: ${{ values.link_storage }}
 
   - name: storage_environment
     displayName: "🔗 [Storage] Environnement du Storage Account (si lié)"
@@ -37,9 +37,9 @@ parameters:
     values: ["dev", "test", "staging", "prod", "sandbox", "poc"]
 
   - name: location
-    displayName: "🌍 [Basics] Région"
+    displayName: "🌍 Région Azure (doit correspondre au Resource Group)"
     type: string
-    default: "West Europe"
+    default: "${{ values.location }}"
     values:
       - "West Europe"
       - "North Europe"
@@ -59,38 +59,38 @@ parameters:
       - "Japan East"
 
   - name: keyvault_sku
-    displayName: "💎 [Basics] Pricing Tier (SKU)"
+    displayName: "💎 KeyVault SKU (Pricing Tier)"
     type: string
-    default: "standard"
+    default: "${{ values.keyvault_sku }}"
     values:
       - "standard"
       - "premium"
 
   - name: keyvault_retention_days
-    displayName: "🗓️ [Basics] Soft Delete retention (jours)"
+    displayName: "🗓️ Soft Delete Retention Period (Days)"
     type: number
-    default: 7
+    default: ${{ values.keyvault_retention_days }}
     values: [7, 14, 30, 60, 90]
 
   - name: keyvault_purge_protection
-    displayName: "🔒 [Access] Purge Protection (recommandé prod)"
+    displayName: "🔒 Purge Protection"
     type: boolean
-    default: false
+    default: ${{ values.keyvault_purge_protection }}
 
   - name: keyvault_disk_encryption
-    displayName: "💿 [Access] Autoriser Azure Disk Encryption"
+    displayName: "💿 Disk Encryption"
     type: boolean
-    default: true
+    default: ${{ values.keyvault_disk_encryption }}
 
   - name: keyvault_deployment
-    displayName: "🚀 [Access] Autoriser Azure Deployment (VMs)"
+    displayName: "🚀 Azure Deployment"
     type: boolean
-    default: true
+    default: ${{ values.keyvault_deployment }}
 
   - name: store_vm_password
-    displayName: "🔑 [Secrets] Stocker le mot de passe VM admin"
+    displayName: "🔑 Store VM Password"
     type: boolean
-    default: true
+    default: ${{ values.store_vm_password }}
 
   - name: tag_owner
     displayName: "🏷️ [Tags] Owner"

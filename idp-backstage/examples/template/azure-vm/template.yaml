@@ -282,8 +282,7 @@ spec:
           tag_criticality: ${{ parameters.tag_criticality }}
           ado_project: ${{ parameters.ado_project }}
           repo_name: ${{ parameters.repo_name }}
-        copyWithoutRender:
-          - "pipeline-*.yml"
+        copyWithoutRender: []
 
     - id: publish
       name: "📤 Publication sur Azure DevOps"

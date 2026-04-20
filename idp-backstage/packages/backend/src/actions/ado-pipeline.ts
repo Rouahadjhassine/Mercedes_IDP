@@ -91,12 +91,25 @@ export const adoPipelineModule = createBackendModule({
 
               ctx.logger.info(`Pipeline ID is ${pipelineId}. Triggering pipeline run...`);
 
+              // Wait a few seconds for ADO to parse the newly pushed YAML file
+              if (!pipelineId) {
+                 // only delay if we just created it
+                 await new Promise(resolve => setTimeout(resolve, 3000));
+              }
+
               // 3. Run Pipeline
               const runResp = await fetch(`${baseUrl}/${pipelineId}/runs?api-version=7.1-preview.1`, {
                 method: 'POST',
                 headers: { Authorization: authHeader, 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                   previewRun: false,
+                  resources: {
+                    repositories: {
+                      self: {
+                        refName: "refs/heads/main"
+                      }
+                    }
+                  },
                   templateParameters: templateParameters || {}
                 }),
               });

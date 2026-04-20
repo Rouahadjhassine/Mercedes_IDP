@@ -238,7 +238,7 @@ stages:
 - stage: Apply
   displayName: "3 🚀 Apply (créer VM)"
   dependsOn: Plan
-  condition: and(succeeded(), eq('${{ parameters.action }}', 'apply'))
+  condition: and(succeeded(), ne('${{ parameters.action }}', 'destroy'))
   jobs:
   - deployment: Apply
     environment: "azure-pfe"
@@ -269,14 +269,33 @@ stages:
                 export ARM_CLIENT_SECRET=$servicePrincipalKey
                 export ARM_TENANT_ID=$tenantId
                 export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+
+                # ── Guard + fallback si paramètres vides ──────────────
+                RG_PREFIX="${{ parameters.rg_prefix }}"
+                RG_ENV="${{ parameters.rg_environment }}"
+                [ -z "$RG_PREFIX" ] && RG_PREFIX="mic"
+                [ -z "$RG_ENV" ]    && RG_ENV="dev"
+                echo "🚀 Apply → VM dans RG: ${RG_PREFIX}-rg-${RG_ENV}"
+                # ──────────────────────────────────────────────────────
+
                 cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)
                 terraform init
+
                 terraform apply -auto-approve \
-                  $(Pipeline.Workspace)/tfplan-vm/tfplan
+                  -var="subscription_id=$(SUBSCRIPTION_ID)" \
+                  -var="prefix=$RG_PREFIX" \
+                  -var="environment=$RG_ENV" \
+                  -var="vm_count=${{ parameters.vm_count }}" \
+                  -var="vm_size=${{ parameters.vm_size }}" \
+                  -var="vm_os_type=${{ parameters.vm_os_type }}" \
+                  -var="vm_os_image=${{ parameters.vm_os_image }}" \
+                  -var="vm_disk_type=${{ parameters.vm_disk_type }}" \
+                  -var="vm_admin_password=$(VM_ADMIN_PASSWORD)"
+
                 echo ""
                 echo "============================================"
                 echo "  ✅ VM créée avec succès !"
-                echo "  📁 RG: ${{ parameters.rg_prefix }}-rg-${{ parameters.rg_environment }}"
+                echo "  📁 RG: ${RG_PREFIX}-rg-${RG_ENV}"
                 echo "  🌍 Région: ${{ parameters.location }}"
                 echo "  💻 OS: ${{ parameters.vm_os_type }} – ${{ parameters.vm_os_image }}"
                 echo "  📐 Taille: ${{ parameters.vm_size }} x ${{ parameters.vm_count }}"

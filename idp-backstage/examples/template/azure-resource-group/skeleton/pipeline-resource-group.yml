@@ -31,7 +31,7 @@ parameters:
 
   # ── NOM DU RESOURCE GROUP ─────────────────────────────────
   - name: rg_name_prefix
-    displayName: "🏷️ Préfixe du nom (format: PREFIX-rg-ENV)"
+    displayName: "🏷️ Préfixe court SEULEMENT (ex: 'mic', 'tt', 'pfe' → donnera PREFIX-rg-ENV)"
     type: string
     default: "mic"
 
@@ -286,6 +286,10 @@ stages:
           [ -z "$LOCATION" ] && LOCATION="West Europe"
           [ -z "$PREFIX" ]   && PREFIX="mic"
           [ -z "$ENV" ]      && ENV="dev"
+          # Auto-clean: enlever le suffixe '-rg' si l'utilisateur l'a inclus par erreur
+          PREFIX="${PREFIX%-rg}"
+          PREFIX="${PREFIX%-RG}"
+          echo "✅ PREFIX nettoyé: $PREFIX → nom final: ${PREFIX}-rg-${ENV}"
           # ───────────────────────────────────────────────────────
 
           cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)
@@ -311,7 +315,7 @@ stages:
 - stage: Apply
   displayName: "3 🚀 Apply (créer Resource Group)"
   dependsOn: Plan
-  condition: and(succeeded(), eq('${{ parameters.action }}', 'apply'))
+  condition: and(succeeded(), ne('${{ parameters.action }}', 'destroy'))
   jobs:
   - deployment: Apply
     environment: "azure-pfe"
@@ -345,20 +349,83 @@ stages:
                 export ARM_TENANT_ID=$tenantId
                 export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
 
+                # ── Capture TOUTES les variables en shell ─────────────
+                LOCATION="${{ parameters.location }}"
+                PREFIX="${{ parameters.rg_name_prefix }}"
+                ENV="${{ parameters.environment }}"
+                TAG_OWNER="${{ parameters.tag_owner }}"
+                TAG_PROJECT="${{ parameters.tag_project }}"
+                TAG_COST_CENTER="${{ parameters.tag_cost_center }}"
+                TAG_MANAGED_BY="${{ parameters.tag_managed_by }}"
+                TAG_CRITICALITY="${{ parameters.tag_criticality }}"
+                TAG_DATA_CLASS="${{ parameters.tag_data_classification }}"
+
+                # ── Fallbacks si vides ────────────────────────────────
+                [ -z "$LOCATION" ]       && LOCATION="West Europe"
+                [ -z "$PREFIX" ]         && PREFIX="mic"
+                [ -z "$ENV" ]            && ENV="dev"
+                [ -z "$TAG_OWNER" ]      && TAG_OWNER="MIC-SECOPS"
+                [ -z "$TAG_PROJECT" ]    && TAG_PROJECT="IDP-PFE"
+                [ -z "$TAG_COST_CENTER" ] && TAG_COST_CENTER="MIC-001"
+                [ -z "$TAG_MANAGED_BY" ] && TAG_MANAGED_BY="Terraform"
+                [ -z "$TAG_CRITICALITY" ] && TAG_CRITICALITY="Medium"
+                [ -z "$TAG_DATA_CLASS" ] && TAG_DATA_CLASS="Internal"
+
+                # ── Auto-clean: enlever suffixe '-rg' du préfixe ──────
+                PREFIX="${PREFIX%-rg}"
+                PREFIX="${PREFIX%-RG}"
+                echo "🚀 Apply → Resource Group: ${PREFIX}-rg-${ENV}"
+                # ──────────────────────────────────────────────────────
+
                 cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)
                 terraform init
+
+                # ── Auto-import si le RG existe déjà (ex: tfstate supprimé) ──
+                RG_NAME="${PREFIX}-rg-${ENV}"
+                RG_ID="/subscriptions/$(SUBSCRIPTION_ID)/resourceGroups/${RG_NAME}"
+                RG_EXISTS=$(az group exists --name "$RG_NAME")
+                if [ "$RG_EXISTS" = "true" ]; then
+                  echo "⚠️  RG '$RG_NAME' existe déjà dans Azure."
+                  echo "🔄 Import dans le state Terraform pour éviter l'erreur 'already exists'..."
+                  terraform import \
+                    -var="subscription_id=$(SUBSCRIPTION_ID)" \
+                    -var="prefix=$PREFIX" \
+                    -var="environment=$ENV" \
+                    -var="location=$LOCATION" \
+                    -var="owner=$TAG_OWNER" \
+                    -var="tag_project=$TAG_PROJECT" \
+                    -var="tag_cost_center=$TAG_COST_CENTER" \
+                    -var="tag_managed_by=$TAG_MANAGED_BY" \
+                    -var="tag_criticality=$TAG_CRITICALITY" \
+                    -var="tag_data_classification=$TAG_DATA_CLASS" \
+                    azurerm_resource_group.rg "$RG_ID" || echo "ℹ️  Déjà dans le state, import ignoré."
+                  echo "✅ Import terminé."
+                else
+                  echo "✅ RG '$RG_NAME' n'existe pas encore → création."
+                fi
+                # ──────────────────────────────────────────────────────────────
+
                 terraform apply -auto-approve \
-                  $(Pipeline.Workspace)/tfplan-rg/tfplan
+                  -var="subscription_id=$(SUBSCRIPTION_ID)" \
+                  -var="prefix=$PREFIX" \
+                  -var="environment=$ENV" \
+                  -var="location=$LOCATION" \
+                  -var="owner=$TAG_OWNER" \
+                  -var="tag_project=$TAG_PROJECT" \
+                  -var="tag_cost_center=$TAG_COST_CENTER" \
+                  -var="tag_managed_by=$TAG_MANAGED_BY" \
+                  -var="tag_criticality=$TAG_CRITICALITY" \
+                  -var="tag_data_classification=$TAG_DATA_CLASS"
 
                 echo ""
                 echo "============================================"
                 echo "  ✅ Resource Group créé avec succès !"
-                echo "  📍 Nom: ${{ parameters.rg_name_prefix }}-rg-${{ parameters.environment }}"
-                echo "  🌍 Région: ${{ parameters.location }}"
-                echo "  🏷️  Tags: Owner=${{ parameters.tag_owner }}"
-                echo "   Project=${{ parameters.tag_project }}"
-                echo "   CostCenter=${{ parameters.tag_cost_center }}"
-                echo "   Criticality=${{ parameters.tag_criticality }}"
+                echo "  📍 Nom: ${PREFIX}-rg-${ENV}"
+                echo "  🌍 Région: $LOCATION"
+                echo "  🏷️  Tags: Owner=$TAG_OWNER"
+                echo "   Project=$TAG_PROJECT"
+                echo "   CostCenter=$TAG_COST_CENTER"
+                echo "   Criticality=$TAG_CRITICALITY"
                 echo "============================================"
                 terraform output
 
@@ -407,6 +474,24 @@ stages:
                 [ -z "$LOCATION" ] && LOCATION="West Europe"
                 [ -z "$PREFIX" ]   && PREFIX="mic"
                 [ -z "$ENV" ]      && ENV="dev"
+                # Auto-clean: enlever le suffixe '-rg' si inclus par erreur
+                PREFIX="${PREFIX%-rg}"
+                PREFIX="${PREFIX%-RG}"
+                RG_NAME="${PREFIX}-rg-${ENV}"
+                echo "🗑️  Destruction du Resource Group: $RG_NAME"
+                # ─────────────────────────────────────────────────────
+
+                # ── Supprimer les Resource Locks pour éviter le blocage ──
+                echo "🔓 Vérification et suppression des Resource Locks..."
+                LOCKS=$(az lock list --resource-group "$RG_NAME" --query "[].name" -o tsv 2>/dev/null || echo "")
+                if [ -n "$LOCKS" ]; then
+                  while IFS= read -r lock; do
+                    echo "🔓 Suppression du lock: $lock"
+                    az lock delete --name "$lock" --resource-group "$RG_NAME"
+                  done <<< "$LOCKS"
+                else
+                  echo "✅ Aucun lock trouvé."
+                fi
                 # ─────────────────────────────────────────────────────
 
                 cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)
@@ -422,3 +507,4 @@ stages:
                   -var="tag_managed_by=${{ parameters.tag_managed_by }}" \
                   -var="tag_criticality=${{ parameters.tag_criticality }}" \
                   -var="tag_data_classification=${{ parameters.tag_data_classification }}"
+

@@ -236,6 +236,12 @@ spec:
           rg_name_prefix: ${{ parameters.rg_prefix }}
           environment: ${{ parameters.environment }}
           location: ${{ parameters.location }}
+          tag_owner: ${{ parameters.tag_owner }}
+          tag_project: ${{ parameters.tag_project }}
+          tag_cost_center: ${{ parameters.tag_cost_center }}
+          tag_managed_by: ${{ parameters.tag_managed_by }}
+          tag_criticality: ${{ parameters.tag_criticality }}
+          tag_data_classification: ${{ parameters.tag_data_classification }}
 
   output:
     links:

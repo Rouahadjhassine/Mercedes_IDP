@@ -320,6 +320,10 @@ spec:
           keyvault_deployment: ${{ parameters.keyvault_deployment }}
           link_storage: ${{ parameters.link_storage }}
           store_vm_password: ${{ parameters.store_vm_password }}
+          tag_owner: ${{ parameters.tag_owner }}
+          tag_project: ${{ parameters.tag_project }}
+          tag_criticality: ${{ parameters.tag_criticality }}
+          tag_data_classification: ${{ parameters.tag_data_classification }}
 
   output:
     links:

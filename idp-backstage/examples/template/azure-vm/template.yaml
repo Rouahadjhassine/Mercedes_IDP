@@ -319,6 +319,9 @@ spec:
           vm_os_image: ${{ parameters.vm_os_image }}
           vm_size: ${{ parameters.vm_size }}
           vm_disk_type: ${{ parameters.vm_disk_type }}
+          tag_owner: ${{ parameters.tag_owner }}
+          tag_project: ${{ parameters.tag_project }}
+          tag_criticality: ${{ parameters.tag_criticality }}
 
   output:
     links:

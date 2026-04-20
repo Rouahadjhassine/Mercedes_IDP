@@ -248,7 +248,7 @@ stages:
 - stage: Apply
   displayName: "3 🚀 Apply (créer Key Vault)"
   dependsOn: Plan
-  condition: and(succeeded(), eq('${{ parameters.action }}', 'apply'))
+  condition: and(succeeded(), ne('${{ parameters.action }}', 'destroy'))
   jobs:
   - deployment: Apply
     environment: "azure-pfe"
@@ -279,14 +279,33 @@ stages:
                 export ARM_CLIENT_SECRET=$servicePrincipalKey
                 export ARM_TENANT_ID=$tenantId
                 export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+
+                # ── Guard + fallback si paramètres vides ──────────────
+                RG_PREFIX="${{ parameters.rg_prefix }}"
+                RG_ENV="${{ parameters.rg_environment }}"
+                [ -z "$RG_PREFIX" ] && RG_PREFIX="mic"
+                [ -z "$RG_ENV" ]    && RG_ENV="dev"
+                echo "🚀 Apply → KeyVault dans RG: ${RG_PREFIX}-rg-${RG_ENV}"
+                # ──────────────────────────────────────────────────────
+
                 cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)
                 terraform init
+
                 terraform apply -auto-approve \
-                  $(Pipeline.Workspace)/tfplan-keyvault/tfplan
+                  -var="subscription_id=$(SUBSCRIPTION_ID)" \
+                  -var="prefix=$RG_PREFIX" \
+                  -var="environment=$RG_ENV" \
+                  -var="keyvault_sku=${{ parameters.keyvault_sku }}" \
+                  -var="keyvault_purge_protection=$([ '${{ parameters.keyvault_purge_protection }}' = 'True' ] && echo true || echo false)" \
+                  -var="keyvault_disk_encryption=$([ '${{ parameters.keyvault_disk_encryption }}' = 'True' ] && echo true || echo false)" \
+                  -var="keyvault_deployment=$([ '${{ parameters.keyvault_deployment }}' = 'True' ] && echo true || echo false)" \
+                  -var="keyvault_retention_days=${{ parameters.keyvault_retention_days }}" \
+                  -var="vm_admin_password=$([ '${{ parameters.store_vm_password }}' = 'True' ] && echo $(VM_ADMIN_PASSWORD) || echo 'not-stored')"
+
                 echo ""
                 echo "============================================"
                 echo "  ✅ Key Vault créé avec succès !"
-                echo "  📁 RG: ${{ parameters.rg_prefix }}-rg-${{ parameters.rg_environment }}"
+                echo "  📁 RG: ${RG_PREFIX}-rg-${RG_ENV}"
                 echo "  🌍 Région: ${{ parameters.location }}"
                 echo "  💎 SKU: ${{ parameters.keyvault_sku }}"
                 echo "  🔒 Purge protection: ${{ parameters.keyvault_purge_protection }}"

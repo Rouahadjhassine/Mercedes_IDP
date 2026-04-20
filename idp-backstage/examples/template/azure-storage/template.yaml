@@ -312,6 +312,10 @@ spec:
           storage_replication_type: ${{ parameters.storage_replication_type }}
           storage_access_tier: ${{ parameters.storage_access_tier }}
           storage_retention_days: ${{ parameters.storage_retention_days }}
+          tag_owner: ${{ parameters.tag_owner }}
+          tag_project: ${{ parameters.tag_project }}
+          tag_criticality: ${{ parameters.tag_criticality }}
+          tag_data_classification: ${{ parameters.tag_data_classification }}
 
   output:
     links:

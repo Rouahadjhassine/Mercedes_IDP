@@ -89,13 +89,12 @@ export const adoPipelineModule = createBackendModule({
                 pipelineId = createData.id;
               }
 
-              ctx.logger.info(`Pipeline ID is ${pipelineId}. Triggering pipeline run...`);
+              ctx.logger.info(`Pipeline ID is ${pipelineId}. Waiting for ADO to parse YAML schema...`);
 
-              // Wait a few seconds for ADO to parse the newly pushed YAML file
-              if (!pipelineId) {
-                 // only delay if we just created it
-                 await new Promise(resolve => setTimeout(resolve, 3000));
-              }
+              // Always wait 8 seconds so ADO has time to parse the YAML file and
+              // register the parameter schema before we trigger the run.
+              // Without this delay, templateParameters are silently ignored (empty).
+              await new Promise(resolve => setTimeout(resolve, 8000));
 
               // 3. Run Pipeline
               const runResp = await fetch(`${baseUrl}/${pipelineId}/runs?api-version=7.1-preview.1`, {

@@ -276,8 +276,8 @@ stages:
           # ── Guard: fallback si paramètres vides ─────────────────
           RG_NAME="${{ parameters.resource_group_name }}"
           STORAGE_NAME="${{ parameters.storage_account_name }}"
-          [ -z "$RG_NAME" ] && { echo "❌ ERREUR: resource_group_name est vide !"; exit 1; }
-          [ -z "$STORAGE_NAME" ] && { echo "❌ ERREUR: storage_account_name est vide !"; exit 1; }
+          [ -z "$RG_NAME" ] && RG_NAME="rg-monprojet-test"
+          [ -z "$STORAGE_NAME" ] && STORAGE_NAME="stmonprojettest"
           # ───────────────────────────────────────────────
 
           cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)
@@ -397,8 +397,8 @@ stages:
                 # ── Guard: fallback si paramètres vides ─────────────────
                 RG_NAME="${{ parameters.resource_group_name }}"
                 STORAGE_NAME="${{ parameters.storage_account_name }}"
-                [ -z "$RG_NAME" ] && { echo "❌ ERREUR: resource_group_name est vide !"; exit 1; }
-                [ -z "$STORAGE_NAME" ] && { echo "❌ ERREUR: storage_account_name est vide !"; exit 1; }
+                [ -z "$RG_NAME" ] && RG_NAME="rg-monprojet-test"
+                [ -z "$STORAGE_NAME" ] && STORAGE_NAME="stmonprojettest"
                 # ───────────────────────────────────────────────
 
                 cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)

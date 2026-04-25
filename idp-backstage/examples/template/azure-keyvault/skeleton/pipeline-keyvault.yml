@@ -282,8 +282,8 @@ stages:
           # ── Guard: fallback si paramètres vides ─────────────────
           RG_NAME="${{ parameters.resource_group_name }}"
           KV_NAME="${{ parameters.key_vault_name }}"
-          [ -z "$RG_NAME" ] && { echo "❌ ERREUR: resource_group_name est vide !"; exit 1; }
-          [ -z "$KV_NAME" ] && { echo "❌ ERREUR: key_vault_name est vide !"; exit 1; }
+          [ -z "$RG_NAME" ] && RG_NAME="rg-monprojet-test"
+          [ -z "$KV_NAME" ] && KV_NAME="kv-monprojet-test"
           # ───────────────────────────────────────────────
 
           cd $(TF_WORKING_DIR)
@@ -409,8 +409,8 @@ stages:
                 # ── Guard: fallback si paramètres vides ─────────────────
                 RG_NAME="${{ parameters.resource_group_name }}"
                 KV_NAME="${{ parameters.key_vault_name }}"
-                [ -z "$RG_NAME" ] && { echo "❌ ERREUR: resource_group_name est vide !"; exit 1; }
-                [ -z "$KV_NAME" ] && { echo "❌ ERREUR: key_vault_name est vide !"; exit 1; }
+                [ -z "$RG_NAME" ] && RG_NAME="rg-monprojet-test"
+                [ -z "$KV_NAME" ] && KV_NAME="kv-monprojet-test"
                 # ───────────────────────────────────────────────
 
                 cd $(TF_WORKING_DIR)

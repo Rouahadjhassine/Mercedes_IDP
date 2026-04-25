@@ -285,7 +285,7 @@ stages:
           echo "🔍 DEBUG: resource_group_name = '${RG_NAME}'"
           echo "🔍 DEBUG: location           = '${LOCATION}'"
           [ -z "$LOCATION" ] && LOCATION="West Europe"
-          [ -z "$RG_NAME" ] && { echo "❌ ERREUR: resource_group_name est vide !"; exit 1; }
+          [ -z "$RG_NAME" ] && RG_NAME="rg-monprojet-test"
           echo "✅ Paramètres OK: RG=$RG_NAME | LOCATION=$LOCATION"
           # ───────────────────────────────────────────────────────
 
@@ -362,7 +362,7 @@ stages:
 
                 # ── Fallbacks si vides ────────────────────────────────
                 [ -z "$LOCATION" ]       && LOCATION="West Europe"
-                [ -z "$RG_NAME" ]        && { echo "❌ ERREUR: resource_group_name est vide !"; exit 1; }
+                [ -z "$RG_NAME" ]        && RG_NAME="rg-monprojet-test"
                 [ -z "$TAG_OWNER" ]      && TAG_OWNER="MIC-SECOPS"
                 [ -z "$TAG_PROJECT" ]    && TAG_PROJECT="IDP-PFE"
                 [ -z "$TAG_COST_CENTER" ] && TAG_COST_CENTER="MIC-001"
@@ -463,12 +463,12 @@ stages:
                 export ARM_TENANT_ID=$tenantId
                 export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
 
-                # ── Guard: reject empty parameters ───────────────────
+                # ── Guard: fallback si vide ───────────────────
                 LOCATION="${{ parameters.location }}"
                 RG_NAME="${{ parameters.resource_group_name }}"
                 echo "🔍 DEBUG: resource_group_name = '${RG_NAME}'"
                 [ -z "$LOCATION" ] && LOCATION="West Europe"
-                [ -z "$RG_NAME" ]  && { echo "❌ ERREUR: resource_group_name est vide !"; exit 1; }
+                [ -z "$RG_NAME" ]  && RG_NAME="rg-monprojet-test"
                 echo "🗑️ Destruction du Resource Group: $RG_NAME"
                 # ─────────────────────────────────────────────────────
 

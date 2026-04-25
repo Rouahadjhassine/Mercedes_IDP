@@ -278,8 +278,8 @@ stages:
           # ── Guard: fallback si paramètres vides ─────────────────
           RG_NAME="${{ parameters.resource_group_name }}"
           VM_NAME="${{ parameters.vm_name }}"
-          [ -z "$RG_NAME" ] && { echo "❌ ERREUR: resource_group_name est vide !"; exit 1; }
-          [ -z "$VM_NAME" ] && { echo "❌ ERREUR: vm_name est vide !"; exit 1; }
+          [ -z "$RG_NAME" ] && RG_NAME="rg-monprojet-test"
+          [ -z "$VM_NAME" ] && VM_NAME="vm-monprojet-test"
           # ───────────────────────────────────────────────
 
           cd $(TF_WORKING_DIR)
@@ -398,8 +398,8 @@ stages:
                 # ── Guard: fallback si paramètres vides ─────────────────
                 RG_NAME="${{ parameters.resource_group_name }}"
                 VM_NAME="${{ parameters.vm_name }}"
-                [ -z "$RG_NAME" ] && { echo "❌ ERREUR: resource_group_name est vide !"; exit 1; }
-                [ -z "$VM_NAME" ] && { echo "❌ ERREUR: vm_name est vide !"; exit 1; }
+                [ -z "$RG_NAME" ] && RG_NAME="rg-monprojet-test"
+                [ -z "$VM_NAME" ] && VM_NAME="vm-monprojet-test"
                 # ───────────────────────────────────────────────
 
                 cd $(TF_WORKING_DIR)

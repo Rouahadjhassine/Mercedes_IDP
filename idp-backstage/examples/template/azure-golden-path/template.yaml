@@ -17,7 +17,6 @@ spec:
       required:
         - component_id
         - owner
-        - environment
       properties:
         component_id:
           title: Nom du Service
@@ -39,6 +38,7 @@ spec:
     - title: 2. Identité des Ressources
       required:
         - resource_group_name
+        - environment
         - storage_account_name
         - key_vault_name
         - vm_name

@@ -25,7 +25,6 @@ spec:
     - title: "📋 Informations du composant"
       required:
         - owner
-        - environment
       properties:
         description:
           title: Description
@@ -45,6 +44,7 @@ spec:
         Définissez le nom de votre Resource Group et sa région. Le nom doit être unique et descriptif.
       required:
         - resource_group_name
+        - environment
         - location
       properties:
         resource_group_name:

@@ -26,7 +26,6 @@ spec:
     - title: "📋 Informations du composant"
       required:
         - owner
-        - environment
       properties:
         description:
           title: Description
@@ -47,6 +46,7 @@ spec:
         et choisissez le nom de votre Storage Account.
       required:
         - resource_group_name
+        - environment
         - storage_account_name
       properties:
         resource_group_name:

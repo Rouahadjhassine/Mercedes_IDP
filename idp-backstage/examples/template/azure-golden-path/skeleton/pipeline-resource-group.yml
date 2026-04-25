@@ -407,7 +407,7 @@ stages:
                 terraform destroy -auto-approve \
                   -var="subscription_id=$(SUBSCRIPTION_ID)" \
                   -var="resource_group_name=$RG_NAME" \
-            -var="environment=${{ parameters.environment }}" \
+                  -var="environment=${{ parameters.environment }}" \
                   -var="location=$LOCATION" \
                   -var="owner=${{ parameters.tag_owner }}" \
                   -var="tag_project=${{ parameters.tag_project }}" \

@@ -26,7 +26,6 @@ spec:
     - title: "📋 Informations du composant"
       required:
         - owner
-        - environment
       properties:
         description:
           title: Description
@@ -46,6 +45,7 @@ spec:
         Saisissez le nom exact du Resource Group (déjà créé) et le nom de votre futur Key Vault.
       required:
         - resource_group_name
+        - environment
         - key_vault_name
       properties:
         resource_group_name:

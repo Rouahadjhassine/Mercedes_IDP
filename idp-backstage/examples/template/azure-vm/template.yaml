@@ -27,7 +27,6 @@ spec:
     - title: "📋 Informations du composant"
       required:
         - owner
-        - environment
       properties:
         description:
           title: Description
@@ -47,6 +46,7 @@ spec:
         Saisissez le nom exact du Resource Group (déjà créé) et le nom de votre future Machine Virtuelle.
       required:
         - resource_group_name
+        - environment
         - vm_name
       properties:
         resource_group_name:

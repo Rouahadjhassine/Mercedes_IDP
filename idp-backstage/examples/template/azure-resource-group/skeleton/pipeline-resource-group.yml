@@ -279,10 +279,10 @@ stages:
           export ARM_TENANT_ID=$tenantId
           export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
 
-          # ── Guard: fallback si paramètres vides ─────────────────
-          LOCATION="${{ parameters.location }}"
-          RG_NAME="${{ parameters.resource_group_name }}"
-          ENVIRONMENT="${{ parameters.environment }}"
+          # ── Guard: variables injectées par Backstage ou paramètres ADO ─────────────────
+          LOCATION="${BS_LOCATION:-${{ parameters.location }}}"
+          RG_NAME="${BS_RESOURCE_GROUP_NAME:-${{ parameters.resource_group_name }}}"
+          ENVIRONMENT="${BS_ENVIRONMENT:-${{ parameters.environment }}}"
           echo "🔍 DEBUG: resource_group_name = '${RG_NAME}'"
           echo "🔍 DEBUG: location           = '${LOCATION}'"
           echo "🔍 DEBUG: environment        = '${ENVIRONMENT}'"
@@ -354,15 +354,15 @@ stages:
                 export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
 
                 # ── Capture TOUTES les variables en shell ─────────────
-                LOCATION="${{ parameters.location }}"
-                RG_NAME="${{ parameters.resource_group_name }}"
-                ENVIRONMENT="${{ parameters.environment }}"
-                TAG_OWNER="${{ parameters.tag_owner }}"
-                TAG_PROJECT="${{ parameters.tag_project }}"
-                TAG_COST_CENTER="${{ parameters.tag_cost_center }}"
-                TAG_MANAGED_BY="${{ parameters.tag_managed_by }}"
-                TAG_CRITICALITY="${{ parameters.tag_criticality }}"
-                TAG_DATA_CLASS="${{ parameters.tag_data_classification }}"
+                LOCATION="${BS_LOCATION:-${{ parameters.location }}}"
+                RG_NAME="${BS_RESOURCE_GROUP_NAME:-${{ parameters.resource_group_name }}}"
+                ENVIRONMENT="${BS_ENVIRONMENT:-${{ parameters.environment }}}"
+                TAG_OWNER="${BS_TAG_OWNER:-${{ parameters.tag_owner }}}"
+                TAG_PROJECT="${BS_TAG_PROJECT:-${{ parameters.tag_project }}}"
+                TAG_COST_CENTER="${BS_TAG_COST_CENTER:-${{ parameters.tag_cost_center }}}"
+                TAG_MANAGED_BY="${BS_TAG_MANAGED_BY:-${{ parameters.tag_managed_by }}}"
+                TAG_CRITICALITY="${BS_TAG_CRITICALITY:-${{ parameters.tag_criticality }}}"
+                TAG_DATA_CLASS="${BS_TAG_DATA_CLASSIFICATION:-${{ parameters.tag_data_classification }}}"
 
                 # ── Fallbacks si vides ────────────────────────────────
                 [ -z "$LOCATION" ]       && LOCATION="West Europe"
@@ -469,9 +469,9 @@ stages:
                 export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
 
                 # ── Guard: fallback si vide ───────────────────
-                LOCATION="${{ parameters.location }}"
-                RG_NAME="${{ parameters.resource_group_name }}"
-                ENVIRONMENT="${{ parameters.environment }}"
+                LOCATION="${BS_LOCATION:-${{ parameters.location }}}"
+                RG_NAME="${BS_RESOURCE_GROUP_NAME:-${{ parameters.resource_group_name }}}"
+                ENVIRONMENT="${BS_ENVIRONMENT:-${{ parameters.environment }}}"
                 echo "🔍 DEBUG: resource_group_name = '${RG_NAME}'"
                 [ -z "$LOCATION" ] && LOCATION="West Europe"
                 [ -z "$RG_NAME" ]  && RG_NAME="rg-monprojet-test"

@@ -270,10 +270,10 @@ stages:
           export ARM_TENANT_ID=$tenantId
           export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
 
-          # ── Guard: fallback si nom vide ──────────────────────────
-          RG_NAME="${{ parameters.resource_group_name }}"
-          LOCATION="${{ parameters.location }}"
-          ENVIRONMENT="${{ parameters.environment }}"
+          # ── Guard: variables injectées par Backstage ou paramètres ADO ──────────────────────────
+          RG_NAME="${BS_RESOURCE_GROUP_NAME:-${{ parameters.resource_group_name }}}"
+          LOCATION="${BS_LOCATION:-${{ parameters.location }}}"
+          ENVIRONMENT="${BS_ENVIRONMENT:-${{ parameters.environment }}}"
           echo "🔍 DEBUG: resource_group_name reçu = '${RG_NAME}'"
           echo "🔍 DEBUG: location reçu           = '${LOCATION}'"
           echo "🔍 DEBUG: environment           = '${ENVIRONMENT}'"
@@ -405,10 +405,10 @@ stages:
                 export ARM_TENANT_ID=$tenantId
                 export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
 
-                # ── Guard: fallback si nom vide ──────────────────────────
-                RG_NAME="${{ parameters.resource_group_name }}"
-                LOCATION="${{ parameters.location }}"
-                ENVIRONMENT="${{ parameters.environment }}"
+                # ── Guard: variables injectées par Backstage ou paramètres ADO ──────────────────────────
+                RG_NAME="${BS_RESOURCE_GROUP_NAME:-${{ parameters.resource_group_name }}}"
+                LOCATION="${BS_LOCATION:-${{ parameters.location }}}"
+                ENVIRONMENT="${BS_ENVIRONMENT:-${{ parameters.environment }}}"
                 echo "🔍 DEBUG: resource_group_name reçu = '${RG_NAME}'"
                 echo "🔍 DEBUG: location reçu           = '${LOCATION}'"
                 echo "🔍 DEBUG: environment           = '${ENVIRONMENT}'"

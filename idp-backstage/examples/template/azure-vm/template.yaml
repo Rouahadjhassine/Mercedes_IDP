@@ -27,6 +27,7 @@ spec:
     - title: "📋 Informations du composant"
       required:
         - owner
+        - environment
       properties:
         description:
           title: Description
@@ -53,6 +54,25 @@ spec:
           type: string
           description: "Le nom exact du Resource Group (ex: testfinal)"
           default: ""
+        environment:
+          title: "🌐 Environnement"
+          type: string
+          description: "Cycle de vie du déploiement"
+          default: dev
+          enum:
+            - dev
+            - test
+            - staging
+            - prod
+            - sandbox
+            - poc
+          enumNames:
+            - "🔧 Development"
+            - "🧪 Test"
+            - "🎭 Staging"
+            - "🚀 Production"
+            - "🏖️ Sandbox"
+            - "💡 Proof of Concept"
         vm_name:
           title: "💻 Nom de la Machine Virtuelle"
           type: string
@@ -264,6 +284,7 @@ spec:
           tag_criticality: ${{ parameters.tag_criticality }}
           ado_project: ${{ parameters.ado_project }}
           repo_name: ${{ parameters.repo_name }}
+          environment: ${{ parameters.environment }}
         copyWithoutRender:
           - "pipeline-*.yml"
 
@@ -304,6 +325,7 @@ spec:
           tag_owner: ${{ parameters.tag_owner }}
           tag_project: ${{ parameters.tag_project }}
           tag_criticality: ${{ parameters.tag_criticality }}
+          environment: ${{ parameters.environment }}
 
   output:
     links:

@@ -37,6 +37,18 @@ parameters:
 
 
   # ── RÉGION ────────────────────────────────────────────────
+  - name: environment
+    displayName: "🌱 Environnement"
+    type: string
+    default: "dev"
+    values:
+      - "dev"
+      - "test"
+      - "staging"
+      - "prod"
+      - "sandbox"
+      - "poc"
+
   - name: location
     displayName: "🌍 Région (Region)"
     type: string
@@ -284,6 +296,7 @@ stages:
           terraform plan \
             -var="subscription_id=$(SUBSCRIPTION_ID)" \
             -var="resource_group_name=$RG_NAME" \
+            -var="environment=${{ parameters.environment }}" \
             -var="location=$LOCATION" \
             -var="owner=${{ parameters.tag_owner }}" \
             -var="tag_project=${{ parameters.tag_project }}" \
@@ -370,6 +383,7 @@ stages:
                   terraform import \
                     -var="subscription_id=$(SUBSCRIPTION_ID)" \
                     -var="resource_group_name=$RG_NAME" \
+            -var="environment=${{ parameters.environment }}" \
                     -var="location=$LOCATION" \
                     -var="owner=$TAG_OWNER" \
                     -var="tag_project=$TAG_PROJECT" \
@@ -387,6 +401,7 @@ stages:
                 terraform apply -auto-approve \
                   -var="subscription_id=$(SUBSCRIPTION_ID)" \
                   -var="resource_group_name=$RG_NAME" \
+            -var="environment=${{ parameters.environment }}" \
                   -var="location=$LOCATION" \
                   -var="owner=$TAG_OWNER" \
                   -var="tag_project=$TAG_PROJECT" \
@@ -475,6 +490,7 @@ stages:
                 terraform destroy -auto-approve \
                   -var="subscription_id=$(SUBSCRIPTION_ID)" \
                   -var="resource_group_name=$RG_NAME" \
+            -var="environment=${{ parameters.environment }}" \
                   -var="location=$LOCATION" \
                   -var="owner=${{ parameters.tag_owner }}" \
                   -var="tag_project=${{ parameters.tag_project }}" \

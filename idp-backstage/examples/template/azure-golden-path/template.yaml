@@ -17,6 +17,7 @@ spec:
       required:
         - component_id
         - owner
+        - environment
       properties:
         component_id:
           title: Nom du Service
@@ -53,6 +54,25 @@ spec:
           title: Nom du Resource Group
           type: string
           default: ""
+        environment:
+          title: "🌐 Environnement"
+          type: string
+          description: "Cycle de vie du déploiement"
+          default: dev
+          enum:
+            - dev
+            - test
+            - staging
+            - prod
+            - sandbox
+            - poc
+          enumNames:
+            - "🔧 Development"
+            - "🧪 Test"
+            - "🎭 Staging"
+            - "🚀 Production"
+            - "🏖️ Sandbox"
+            - "💡 Proof of Concept"
         storage_account_name:
           title: Nom du Compte de Stockage
           type: string
@@ -169,6 +189,7 @@ spec:
           storage_kind: ${{ parameters.storage_kind }}
           keyvault_sku: ${{ parameters.keyvault_sku }}
           subscription_id: ${{ parameters.subscription_id }}
+          environment: ${{ parameters.environment }}
         copyWithoutRender:
           - "pipeline-*.yml"
 

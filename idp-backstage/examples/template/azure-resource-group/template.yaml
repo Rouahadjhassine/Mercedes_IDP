@@ -25,6 +25,7 @@ spec:
     - title: "📋 Informations du composant"
       required:
         - owner
+        - environment
       properties:
         description:
           title: Description
@@ -52,6 +53,25 @@ spec:
           description: "Le nom de votre Resource Group (ex: my-project-rg-dev)"
           default: ""
           maxLength: 90
+        environment:
+          title: "🌐 Environnement"
+          type: string
+          description: "Cycle de vie du déploiement"
+          default: dev
+          enum:
+            - dev
+            - test
+            - staging
+            - prod
+            - sandbox
+            - poc
+          enumNames:
+            - "🔧 Development"
+            - "🧪 Test"
+            - "🎭 Staging"
+            - "🚀 Production"
+            - "🏖️ Sandbox"
+            - "💡 Proof of Concept"
         location:
           title: "🌍 Région Azure"
           type: string
@@ -183,6 +203,7 @@ spec:
           tag_data_classification: ${{ parameters.tag_data_classification }}
           ado_project: ${{ parameters.ado_project }}
           repo_name: ${{ parameters.repo_name }}
+          environment: ${{ parameters.environment }}
         copyWithoutRender:
           - "pipeline-*.yml"
 
@@ -220,6 +241,7 @@ spec:
           tag_managed_by: ${{ parameters.tag_managed_by }}
           tag_criticality: ${{ parameters.tag_criticality }}
           tag_data_classification: ${{ parameters.tag_data_classification }}
+          environment: ${{ parameters.environment }}
 
   output:
     links:

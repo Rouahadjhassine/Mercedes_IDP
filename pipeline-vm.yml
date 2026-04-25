@@ -37,6 +37,18 @@ parameters:
   # SECTION 2 – PARAMÈTRES DE BASE VM (onglet "Basics")
   # ═══════════════════════════════════════════════════════════
 
+  - name: environment
+    displayName: "🌱 Environnement"
+    type: string
+    default: "dev"
+    values:
+      - "dev"
+      - "test"
+      - "staging"
+      - "prod"
+      - "sandbox"
+      - "poc"
+
   - name: location
     displayName: "🌍 [Basics] Région (Region)"
     type: string

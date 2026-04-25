@@ -6,6 +6,7 @@ variable "subscription_id" {
 variable "environment" {
   description = "Environnement de déploiement (ex: dev, ppe, pro)"
   type        = string
+  default     = "dev"
   validation {
     condition     = contains(["dev", "ppe", "pro", "sandbox"], var.environment)
     error_message = "L'environnement doit être 'dev', 'ppe', 'pro', ou 'sandbox'."

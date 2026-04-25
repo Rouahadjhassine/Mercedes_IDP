@@ -273,12 +273,15 @@ stages:
           # ── Guard: fallback si nom vide ──────────────────────────
           RG_NAME="${{ parameters.resource_group_name }}"
           LOCATION="${{ parameters.location }}"
+          ENVIRONMENT="${{ parameters.environment }}"
           echo "🔍 DEBUG: resource_group_name reçu = '${RG_NAME}'"
           echo "🔍 DEBUG: location reçu           = '${LOCATION}'"
+          echo "🔍 DEBUG: environment           = '${ENVIRONMENT}'"
           # Fallback sur la valeur par défaut déclarée dans le paramètre YAML
           [ -z "$RG_NAME" ]   && RG_NAME="rg-monprojet-test"
           [ -z "$LOCATION" ]  && LOCATION="West Europe"
-          echo "✅ Valeurs effectives: RG=$RG_NAME | LOCATION=$LOCATION"
+          [ -z "$ENVIRONMENT" ] && ENVIRONMENT="dev"
+          echo "✅ Valeurs effectives: RG=$RG_NAME | LOCATION=$LOCATION | ENV=$ENVIRONMENT"
           # ───────────────────────────────────────────────────────
 
           cd $(TF_WORKING_DIR)
@@ -291,7 +294,7 @@ stages:
           terraform plan \
             -var="subscription_id=$(SUBSCRIPTION_ID)" \
             -var="resource_group_name=$RG_NAME" \
-            -var="environment=${{ parameters.environment }}" \
+            -var="environment=$ENVIRONMENT" \
             -var="location=$LOCATION" \
             -var="owner=${{ parameters.tag_owner }}" \
             -var="tag_project=${{ parameters.tag_project }}" \
@@ -340,6 +343,13 @@ stages:
                 export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
 
                 RG_NAME="${{ parameters.resource_group_name }}"
+                LOCATION="${{ parameters.location }}"
+                ENVIRONMENT="${{ parameters.environment }}"
+
+                [ -z "$RG_NAME" ]   && RG_NAME="rg-monprojet-test"
+                [ -z "$LOCATION" ]  && LOCATION="West Europe"
+                [ -z "$ENVIRONMENT" ] && ENVIRONMENT="dev"
+
                 cd $(TF_WORKING_DIR)
                 terraform init \
                   -backend-config="resource_group_name=rg-terraform-state" \
@@ -398,11 +408,14 @@ stages:
                 # ── Guard: fallback si nom vide ──────────────────────────
                 RG_NAME="${{ parameters.resource_group_name }}"
                 LOCATION="${{ parameters.location }}"
+                ENVIRONMENT="${{ parameters.environment }}"
                 echo "🔍 DEBUG: resource_group_name reçu = '${RG_NAME}'"
                 echo "🔍 DEBUG: location reçu           = '${LOCATION}'"
+                echo "🔍 DEBUG: environment           = '${ENVIRONMENT}'"
                 [ -z "$RG_NAME" ]   && RG_NAME="rg-monprojet-test"
                 [ -z "$LOCATION" ]  && LOCATION="West Europe"
-                echo "✅ Valeurs effectives: RG=$RG_NAME | LOCATION=$LOCATION"
+                [ -z "$ENVIRONMENT" ] && ENVIRONMENT="dev"
+                echo "✅ Valeurs effectives: RG=$RG_NAME | LOCATION=$LOCATION | ENV=$ENVIRONMENT"
                 # ─────────────────────────────────────────────────────
 
                 cd $(TF_WORKING_DIR)
@@ -414,7 +427,7 @@ stages:
                 terraform destroy -auto-approve \
                   -var="subscription_id=$(SUBSCRIPTION_ID)" \
                   -var="resource_group_name=$RG_NAME" \
-                  -var="environment=${{ parameters.environment }}" \
+                  -var="environment=$ENVIRONMENT" \
                   -var="location=$LOCATION" \
                   -var="owner=${{ parameters.tag_owner }}" \
                   -var="tag_project=${{ parameters.tag_project }}" \

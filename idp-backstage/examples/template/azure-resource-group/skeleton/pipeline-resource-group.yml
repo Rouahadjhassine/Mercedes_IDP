@@ -282,11 +282,14 @@ stages:
           # ── Guard: fallback si paramètres vides ─────────────────
           LOCATION="${{ parameters.location }}"
           RG_NAME="${{ parameters.resource_group_name }}"
+          ENVIRONMENT="${{ parameters.environment }}"
           echo "🔍 DEBUG: resource_group_name = '${RG_NAME}'"
           echo "🔍 DEBUG: location           = '${LOCATION}'"
+          echo "🔍 DEBUG: environment        = '${ENVIRONMENT}'"
           [ -z "$LOCATION" ] && LOCATION="West Europe"
           [ -z "$RG_NAME" ] && RG_NAME="rg-monprojet-test"
-          echo "✅ Paramètres OK: RG=$RG_NAME | LOCATION=$LOCATION"
+          [ -z "$ENVIRONMENT" ] && ENVIRONMENT="dev"
+          echo "✅ Paramètres OK: RG=$RG_NAME | LOCATION=$LOCATION | ENV=$ENVIRONMENT"
           # ───────────────────────────────────────────────────────
 
           cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)
@@ -299,7 +302,7 @@ stages:
           terraform plan \
             -var="subscription_id=$(SUBSCRIPTION_ID)" \
             -var="resource_group_name=$RG_NAME" \
-            -var="environment=${{ parameters.environment }}" \
+            -var="environment=$ENVIRONMENT" \
             -var="location=$LOCATION" \
             -var="owner=${{ parameters.tag_owner }}" \
             -var="tag_project=${{ parameters.tag_project }}" \
@@ -353,6 +356,7 @@ stages:
                 # ── Capture TOUTES les variables en shell ─────────────
                 LOCATION="${{ parameters.location }}"
                 RG_NAME="${{ parameters.resource_group_name }}"
+                ENVIRONMENT="${{ parameters.environment }}"
                 TAG_OWNER="${{ parameters.tag_owner }}"
                 TAG_PROJECT="${{ parameters.tag_project }}"
                 TAG_COST_CENTER="${{ parameters.tag_cost_center }}"
@@ -363,6 +367,7 @@ stages:
                 # ── Fallbacks si vides ────────────────────────────────
                 [ -z "$LOCATION" ]       && LOCATION="West Europe"
                 [ -z "$RG_NAME" ]        && RG_NAME="rg-monprojet-test"
+                [ -z "$ENVIRONMENT" ]    && ENVIRONMENT="dev"
                 [ -z "$TAG_OWNER" ]      && TAG_OWNER="MIC-SECOPS"
                 [ -z "$TAG_PROJECT" ]    && TAG_PROJECT="IDP-PFE"
                 [ -z "$TAG_COST_CENTER" ] && TAG_COST_CENTER="MIC-001"
@@ -386,7 +391,7 @@ stages:
                   terraform import \
                     -var="subscription_id=$(SUBSCRIPTION_ID)" \
                     -var="resource_group_name=$RG_NAME" \
-                    -var="environment=${{ parameters.environment }}" \
+                    -var="environment=$ENVIRONMENT" \
                     -var="location=$LOCATION" \
                     -var="owner=$TAG_OWNER" \
                     -var="tag_project=$TAG_PROJECT" \
@@ -404,7 +409,7 @@ stages:
                 terraform apply -auto-approve \
                   -var="subscription_id=$(SUBSCRIPTION_ID)" \
                   -var="resource_group_name=$RG_NAME" \
-                  -var="environment=${{ parameters.environment }}" \
+                  -var="environment=$ENVIRONMENT" \
                   -var="location=$LOCATION" \
                   -var="owner=$TAG_OWNER" \
                   -var="tag_project=$TAG_PROJECT" \
@@ -466,9 +471,11 @@ stages:
                 # ── Guard: fallback si vide ───────────────────
                 LOCATION="${{ parameters.location }}"
                 RG_NAME="${{ parameters.resource_group_name }}"
+                ENVIRONMENT="${{ parameters.environment }}"
                 echo "🔍 DEBUG: resource_group_name = '${RG_NAME}'"
                 [ -z "$LOCATION" ] && LOCATION="West Europe"
                 [ -z "$RG_NAME" ]  && RG_NAME="rg-monprojet-test"
+                [ -z "$ENVIRONMENT" ] && ENVIRONMENT="dev"
                 echo "🗑️ Destruction du Resource Group: $RG_NAME"
                 # ─────────────────────────────────────────────────────
 
@@ -494,7 +501,7 @@ stages:
                 terraform destroy -auto-approve \
                   -var="subscription_id=$(SUBSCRIPTION_ID)" \
                   -var="resource_group_name=$RG_NAME" \
-                  -var="environment=${{ parameters.environment }}" \
+                  -var="environment=$ENVIRONMENT" \
                   -var="location=$LOCATION" \
                   -var="owner=${{ parameters.tag_owner }}" \
                   -var="tag_project=${{ parameters.tag_project }}" \

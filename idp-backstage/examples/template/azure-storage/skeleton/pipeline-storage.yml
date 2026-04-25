@@ -224,6 +224,9 @@ stages:
       vmImage: "ubuntu-latest"
     steps:
     - checkout: self
+      path: self
+    - checkout: git://IDP-MIC/IDP-MIC
+      path: IDP-MIC
 
     - script: |
         wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
@@ -232,7 +235,7 @@ stages:
       displayName: "📦 Installer Terraform"
 
     - script: |
-        cd $(TF_WORKING_DIR)
+        cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)
         terraform init -backend=false
         terraform validate
       displayName: "🔍 Terraform Validate"
@@ -247,6 +250,9 @@ stages:
       vmImage: "ubuntu-latest"
     steps:
     - checkout: self
+      path: self
+    - checkout: git://IDP-MIC/IDP-MIC
+      path: IDP-MIC
 
     - script: |
         wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
@@ -274,7 +280,7 @@ stages:
           [ -z "$STORAGE_NAME" ] && { echo "❌ ERREUR: storage_account_name est vide !"; exit 1; }
           # ───────────────────────────────────────────────
 
-          cd $(TF_WORKING_DIR)
+          cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)
           terraform init \
             -backend-config="resource_group_name=rg-terraform-state" \
             -backend-config="storage_account_name=pfetfstate" \
@@ -330,7 +336,7 @@ stages:
                 export ARM_TENANT_ID=$tenantId
                 export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
 
-                cd $(TF_WORKING_DIR)
+                cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)
                 STORAGE_NAME="${{ parameters.storage_account_name }}"
                 terraform init \
                   -backend-config="resource_group_name=rg-terraform-state" \
@@ -395,7 +401,7 @@ stages:
                 [ -z "$STORAGE_NAME" ] && { echo "❌ ERREUR: storage_account_name est vide !"; exit 1; }
                 # ───────────────────────────────────────────────
 
-                cd $(TF_WORKING_DIR)
+                cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)
                 terraform init \
                   -backend-config="resource_group_name=rg-terraform-state" \
                   -backend-config="storage_account_name=pfetfstate" \

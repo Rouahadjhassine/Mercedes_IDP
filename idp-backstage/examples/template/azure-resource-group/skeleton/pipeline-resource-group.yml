@@ -282,8 +282,11 @@ stages:
           # ── Guard: fallback si paramètres vides ─────────────────
           LOCATION="${{ parameters.location }}"
           RG_NAME="${{ parameters.resource_group_name }}"
+          echo "🔍 DEBUG: resource_group_name = '${RG_NAME}'"
+          echo "🔍 DEBUG: location           = '${LOCATION}'"
           [ -z "$LOCATION" ] && LOCATION="West Europe"
           [ -z "$RG_NAME" ] && { echo "❌ ERREUR: resource_group_name est vide !"; exit 1; }
+          echo "✅ Paramètres OK: RG=$RG_NAME | LOCATION=$LOCATION"
           # ───────────────────────────────────────────────────────
 
           cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)
@@ -463,9 +466,10 @@ stages:
                 # ── Guard: reject empty parameters ───────────────────
                 LOCATION="${{ parameters.location }}"
                 RG_NAME="${{ parameters.resource_group_name }}"
+                echo "🔍 DEBUG: resource_group_name = '${RG_NAME}'"
                 [ -z "$LOCATION" ] && LOCATION="West Europe"
                 [ -z "$RG_NAME" ]  && { echo "❌ ERREUR: resource_group_name est vide !"; exit 1; }
-                echo "🗑️  Destruction du Resource Group: $RG_NAME"
+                echo "🗑️ Destruction du Resource Group: $RG_NAME"
                 # ─────────────────────────────────────────────────────
 
                 # ── Supprimer les Resource Locks pour éviter le blocage ──

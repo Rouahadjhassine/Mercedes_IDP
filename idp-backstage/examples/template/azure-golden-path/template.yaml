@@ -203,10 +203,100 @@ spec:
         repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
         catalogInfoPath: '/catalog-info.yaml'
 
+    # ── ZERO-CLICK : déclenchement automatique des 4 pipelines ──────────
+
+    - id: run-pipeline-rg
+      name: "🏗️ Lancement Pipeline – Resource Group"
+      action: ado:pipeline:run
+      input:
+        organization: ${{ parameters.ado_org }}
+        project: ${{ parameters.ado_project }}
+        repo: ${{ parameters.repo_name }}
+        pipelineName: pipeline-resource-group-${{ parameters.repo_name }}
+        yamlPath: pipeline-resource-group.yml
+        templateParameters:
+          action: apply
+          resource_group_name: ${{ parameters.resource_group_name }}
+          location: ${{ parameters.location }}
+          environment: ${{ parameters.environment }}
+
+    - id: run-pipeline-storage
+      name: "💾 Lancement Pipeline – Storage Account"
+      action: ado:pipeline:run
+      input:
+        organization: ${{ parameters.ado_org }}
+        project: ${{ parameters.ado_project }}
+        repo: ${{ parameters.repo_name }}
+        pipelineName: pipeline-storage-${{ parameters.repo_name }}
+        yamlPath: pipeline-storage.yml
+        templateParameters:
+          action: apply
+          resource_group_name: ${{ parameters.resource_group_name }}
+          storage_account_name: ${{ parameters.storage_account_name }}
+          location: ${{ parameters.location }}
+          environment: ${{ parameters.environment }}
+          storage_account_tier: ${{ parameters.storage_account_tier }}
+          storage_kind: ${{ parameters.storage_kind }}
+
+    - id: run-pipeline-keyvault
+      name: "🔑 Lancement Pipeline – Key Vault"
+      action: ado:pipeline:run
+      input:
+        organization: ${{ parameters.ado_org }}
+        project: ${{ parameters.ado_project }}
+        repo: ${{ parameters.repo_name }}
+        pipelineName: pipeline-keyvault-${{ parameters.repo_name }}
+        yamlPath: pipeline-keyvault.yml
+        templateParameters:
+          action: apply
+          resource_group_name: ${{ parameters.resource_group_name }}
+          key_vault_name: ${{ parameters.key_vault_name }}
+          location: ${{ parameters.location }}
+          environment: ${{ parameters.environment }}
+          keyvault_sku: ${{ parameters.keyvault_sku }}
+
+    - id: run-pipeline-vm
+      name: "💻 Lancement Pipeline – Virtual Machine"
+      action: ado:pipeline:run
+      input:
+        organization: ${{ parameters.ado_org }}
+        project: ${{ parameters.ado_project }}
+        repo: ${{ parameters.repo_name }}
+        pipelineName: pipeline-vm-${{ parameters.repo_name }}
+        yamlPath: pipeline-vm.yml
+        templateParameters:
+          action: apply
+          resource_group_name: ${{ parameters.resource_group_name }}
+          vm_name: ${{ parameters.vm_name }}
+          location: ${{ parameters.location }}
+          environment: ${{ parameters.environment }}
+          vm_size: ${{ parameters.vm_size }}
+          vm_os_image: ${{ parameters.vm_os_image }}
+
   output:
     links:
-      - title: Dépôt Azure DevOps (Code Source)
+      - title: "📁 Dépôt Azure DevOps (Code Source)"
         url: ${{ steps['publish'].output.remoteUrl }}
-      - title: Ouvrir dans le Catalogue Backstage
+      - title: "🔍 Ouvrir dans le Catalogue Backstage"
         icon: catalog
         entityRef: ${{ steps['register'].output.entityRef }}
+      - title: "▶️ Pipeline – Resource Group"
+        url: ${{ steps['run-pipeline-rg'].output.pipelineRunUrl }}
+      - title: "▶️ Pipeline – Storage Account"
+        url: ${{ steps['run-pipeline-storage'].output.pipelineRunUrl }}
+      - title: "▶️ Pipeline – Key Vault"
+        url: ${{ steps['run-pipeline-keyvault'].output.pipelineRunUrl }}
+      - title: "▶️ Pipeline – Virtual Machine"
+        url: ${{ steps['run-pipeline-vm'].output.pipelineRunUrl }}
+    text:
+      - title: "✅ Déploiement en cours"
+        content: |
+          ### Votre infrastructure est en cours de création !
+
+          Backstage a déclenché **4 pipelines** automatiquement depuis Azure DevOps :
+          - 🏗️ Resource Group : `${{ parameters.resource_group_name }}`
+          - 💾 Storage Account : `${{ parameters.storage_account_name }}`
+          - 🔑 Key Vault : `${{ parameters.key_vault_name }}`
+          - 💻 Virtual Machine : `${{ parameters.vm_name }}`
+
+          > 💡 Les pipelines s'exécutent en séquence dans Azure DevOps. Suivez leur avancement via les liens ci-dessus.

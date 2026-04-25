@@ -273,8 +273,12 @@ stages:
           # ── Guard: fallback si nom vide ──────────────────────────
           RG_NAME="${{ parameters.resource_group_name }}"
           LOCATION="${{ parameters.location }}"
-          [ -z "$RG_NAME" ]   && { echo '❌ ERREUR: resource_group_name est vide !'; exit 1; }
-          [ -z "$LOCATION" ] && LOCATION="West Europe"
+          echo "🔍 DEBUG: resource_group_name reçu = '${RG_NAME}'"
+          echo "🔍 DEBUG: location reçu           = '${LOCATION}'"
+          # Fallback sur la valeur par défaut déclarée dans le paramètre YAML
+          [ -z "$RG_NAME" ]   && RG_NAME="rg-monprojet-test"
+          [ -z "$LOCATION" ]  && LOCATION="West Europe"
+          echo "✅ Valeurs effectives: RG=$RG_NAME | LOCATION=$LOCATION"
           # ───────────────────────────────────────────────────────
 
           cd $(TF_WORKING_DIR)
@@ -391,11 +395,14 @@ stages:
                 export ARM_TENANT_ID=$tenantId
                 export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
 
-                # ── Guard: reject empty parameters ───────────────────
+                # ── Guard: fallback si nom vide ──────────────────────────
                 RG_NAME="${{ parameters.resource_group_name }}"
                 LOCATION="${{ parameters.location }}"
-                [ -z "$RG_NAME" ]   && { echo '❌ ERREUR: resource_group_name est vide !'; exit 1; }
-                [ -z "$LOCATION" ] && LOCATION="West Europe"
+                echo "🔍 DEBUG: resource_group_name reçu = '${RG_NAME}'"
+                echo "🔍 DEBUG: location reçu           = '${LOCATION}'"
+                [ -z "$RG_NAME" ]   && RG_NAME="rg-monprojet-test"
+                [ -z "$LOCATION" ]  && LOCATION="West Europe"
+                echo "✅ Valeurs effectives: RG=$RG_NAME | LOCATION=$LOCATION"
                 # ─────────────────────────────────────────────────────
 
                 cd $(TF_WORKING_DIR)

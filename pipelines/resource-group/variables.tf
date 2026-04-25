@@ -3,6 +3,15 @@ variable "subscription_id" {
   type        = string
 }
 
+variable "environment" {
+  description = "Environnement de déploiement (ex: dev, ppe, pro)"
+  type        = string
+  validation {
+    condition     = contains(["dev", "ppe", "pro", "sandbox"], var.environment)
+    error_message = "L'environnement doit être 'dev', 'ppe', 'pro', ou 'sandbox'."
+  }
+}
+
 variable "resource_group_name" {
   description = "Nom exact du Resource Group à créer dans Azure"
   type        = string

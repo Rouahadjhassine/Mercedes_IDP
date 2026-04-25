@@ -1,0 +1,10 @@
+#!/bin/bash
+export BS_RESOURCE_GROUP_NAME="${{ values.resource_group_name }}"
+export BS_LOCATION="${{ values.location }}"
+export BS_ENVIRONMENT="${{ values.environment }}"
+export BS_TAG_OWNER="${{ values.tag_owner }}"
+export BS_TAG_PROJECT="${{ values.tag_project }}"
+export BS_TAG_COST_CENTER="${{ values.tag_cost_center }}"
+export BS_TAG_MANAGED_BY="${{ values.tag_managed_by }}"
+export BS_TAG_CRITICALITY="${{ values.tag_criticality }}"
+export BS_TAG_DATA_CLASSIFICATION="${{ values.tag_data_classification }}"

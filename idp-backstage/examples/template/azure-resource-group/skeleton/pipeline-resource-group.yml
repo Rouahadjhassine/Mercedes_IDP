@@ -279,6 +279,9 @@ stages:
           export ARM_TENANT_ID=$tenantId
           export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
 
+          # ── Source Backstage parameters si présents ─────────────────
+          [ -f bs-params.sh ] && source bs-params.sh
+
           # ── Guard: variables injectées par Backstage ou paramètres ADO ─────────────────
           LOCATION="${BS_LOCATION:-${{ parameters.location }}}"
           RG_NAME="${BS_RESOURCE_GROUP_NAME:-${{ parameters.resource_group_name }}}"
@@ -352,6 +355,9 @@ stages:
                 export ARM_CLIENT_SECRET=$servicePrincipalKey
                 export ARM_TENANT_ID=$tenantId
                 export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+
+                # ── Source Backstage parameters si présents ─────────────────
+                [ -f bs-params.sh ] && source bs-params.sh
 
                 # ── Capture TOUTES les variables en shell ─────────────
                 LOCATION="${BS_LOCATION:-${{ parameters.location }}}"
@@ -467,6 +473,9 @@ stages:
                 export ARM_CLIENT_SECRET=$servicePrincipalKey
                 export ARM_TENANT_ID=$tenantId
                 export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+
+                # ── Source Backstage parameters si présents ─────────────────
+                [ -f bs-params.sh ] && source bs-params.sh
 
                 # ── Guard: fallback si vide ───────────────────
                 LOCATION="${BS_LOCATION:-${{ parameters.location }}}"

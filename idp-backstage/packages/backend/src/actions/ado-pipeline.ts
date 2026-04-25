@@ -109,13 +109,7 @@ export const adoPipelineModule = createBackendModule({
                       }
                     }
                   },
-                  templateParameters: templateParameters || {},
-                  variables: Object.fromEntries(
-                    Object.entries(templateParameters || {}).map(([k, v]) => [
-                      `BS_${k.toUpperCase()}`,
-                      { value: String(v) }
-                    ])
-                  )
+                  templateParameters: templateParameters || {}
                 }),
               });
 

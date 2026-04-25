@@ -33,7 +33,7 @@ parameters:
   - name: resource_group_name
     displayName: "🏷️ Nom du Resource Group (texte libre)"
     type: string
-    default: ""
+    default: "rg-monprojet-test"
 
   # ── RÉGION ────────────────────────────────────────────────
   - name: environment

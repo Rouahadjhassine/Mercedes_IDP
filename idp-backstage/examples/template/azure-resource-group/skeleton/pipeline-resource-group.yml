@@ -30,10 +30,11 @@ parameters:
       - "MIC-SECOPS-PROD"
 
   # ── NOM DU RESOURCE GROUP ─────────────────────────────────
-  - name: rg_name_prefix
-    displayName: "🏷️ Préfixe court SEULEMENT (ex: 'mic', 'tt', 'pfe' → donnera PREFIX-rg-ENV)"
+  - name: resource_group_name
+    displayName: "🏷️ Nom du Resource Group"
     type: string
-    default: "mic"
+    default: ""
+
 
   # ── RÉGION ────────────────────────────────────────────────
   - name: location
@@ -65,19 +66,6 @@ parameters:
       - "East Asia"
       - "Australia East"
       - "Japan East"
-
-  # ── ENVIRONNEMENT ─────────────────────────────────────────
-  - name: environment
-    displayName: "🌐 Environnement"
-    type: string
-    default: "dev"
-    values:
-      - "dev"
-      - "test"
-      - "staging"
-      - "prod"
-      - "sandbox"
-      - "poc"
 
   # ─────────────────────────────────────────────────────────
   # TAGS (comme dans l'onglet "Tags" du portail Azure)
@@ -281,24 +269,21 @@ stages:
 
           # ── Guard: fallback si paramètres vides ─────────────────
           LOCATION="${{ parameters.location }}"
-          PREFIX="${{ parameters.rg_name_prefix }}"
-          ENV="${{ parameters.environment }}"
+          RG_NAME="${{ parameters.resource_group_name }}"
           [ -z "$LOCATION" ] && LOCATION="West Europe"
-          [ -z "$PREFIX" ]   && PREFIX="mic"
-          [ -z "$ENV" ]      && ENV="dev"
-          # Auto-clean: enlever le suffixe '-rg' si l'utilisateur l'a inclus par erreur
-          PREFIX="${PREFIX%-rg}"
-          PREFIX="${PREFIX%-RG}"
-          echo "✅ PREFIX nettoyé: $PREFIX → nom final: ${PREFIX}-rg-${ENV}"
+          [ -z "$RG_NAME" ] && { echo "❌ ERREUR: resource_group_name est vide !"; exit 1; }
           # ───────────────────────────────────────────────────────
 
           cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)
-          terraform init
+          terraform init \
+            -backend-config="resource_group_name=rg-terraform-state" \
+            -backend-config="storage_account_name=pfetfstate" \
+            -backend-config="container_name=tfstate" \
+            -backend-config="key=rg-${RG_NAME}.tfstate"
 
           terraform plan \
             -var="subscription_id=$(SUBSCRIPTION_ID)" \
-            -var="prefix=$PREFIX" \
-            -var="environment=$ENV" \
+            -var="resource_group_name=$RG_NAME" \
             -var="location=$LOCATION" \
             -var="owner=${{ parameters.tag_owner }}" \
             -var="tag_project=${{ parameters.tag_project }}" \
@@ -351,8 +336,7 @@ stages:
 
                 # ── Capture TOUTES les variables en shell ─────────────
                 LOCATION="${{ parameters.location }}"
-                PREFIX="${{ parameters.rg_name_prefix }}"
-                ENV="${{ parameters.environment }}"
+                RG_NAME="${{ parameters.resource_group_name }}"
                 TAG_OWNER="${{ parameters.tag_owner }}"
                 TAG_PROJECT="${{ parameters.tag_project }}"
                 TAG_COST_CENTER="${{ parameters.tag_cost_center }}"
@@ -362,8 +346,7 @@ stages:
 
                 # ── Fallbacks si vides ────────────────────────────────
                 [ -z "$LOCATION" ]       && LOCATION="West Europe"
-                [ -z "$PREFIX" ]         && PREFIX="mic"
-                [ -z "$ENV" ]            && ENV="dev"
+                [ -z "$RG_NAME" ]        && { echo "❌ ERREUR: resource_group_name est vide !"; exit 1; }
                 [ -z "$TAG_OWNER" ]      && TAG_OWNER="MIC-SECOPS"
                 [ -z "$TAG_PROJECT" ]    && TAG_PROJECT="IDP-PFE"
                 [ -z "$TAG_COST_CENTER" ] && TAG_COST_CENTER="MIC-001"
@@ -371,17 +354,14 @@ stages:
                 [ -z "$TAG_CRITICALITY" ] && TAG_CRITICALITY="Medium"
                 [ -z "$TAG_DATA_CLASS" ] && TAG_DATA_CLASS="Internal"
 
-                # ── Auto-clean: enlever suffixe '-rg' du préfixe ──────
-                PREFIX="${PREFIX%-rg}"
-                PREFIX="${PREFIX%-RG}"
-                echo "🚀 Apply → Resource Group: ${PREFIX}-rg-${ENV}"
-                # ──────────────────────────────────────────────────────
-
                 cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)
-                terraform init
+                terraform init \
+                  -backend-config="resource_group_name=rg-terraform-state" \
+                  -backend-config="storage_account_name=pfetfstate" \
+                  -backend-config="container_name=tfstate" \
+                  -backend-config="key=rg-${RG_NAME}.tfstate"
 
                 # ── Auto-import si le RG existe déjà (ex: tfstate supprimé) ──
-                RG_NAME="${PREFIX}-rg-${ENV}"
                 RG_ID="/subscriptions/$(SUBSCRIPTION_ID)/resourceGroups/${RG_NAME}"
                 RG_EXISTS=$(az group exists --name "$RG_NAME")
                 if [ "$RG_EXISTS" = "true" ]; then
@@ -389,8 +369,7 @@ stages:
                   echo "🔄 Import dans le state Terraform pour éviter l'erreur 'already exists'..."
                   terraform import \
                     -var="subscription_id=$(SUBSCRIPTION_ID)" \
-                    -var="prefix=$PREFIX" \
-                    -var="environment=$ENV" \
+                    -var="resource_group_name=$RG_NAME" \
                     -var="location=$LOCATION" \
                     -var="owner=$TAG_OWNER" \
                     -var="tag_project=$TAG_PROJECT" \
@@ -407,8 +386,7 @@ stages:
 
                 terraform apply -auto-approve \
                   -var="subscription_id=$(SUBSCRIPTION_ID)" \
-                  -var="prefix=$PREFIX" \
-                  -var="environment=$ENV" \
+                  -var="resource_group_name=$RG_NAME" \
                   -var="location=$LOCATION" \
                   -var="owner=$TAG_OWNER" \
                   -var="tag_project=$TAG_PROJECT" \
@@ -420,7 +398,7 @@ stages:
                 echo ""
                 echo "============================================"
                 echo "  ✅ Resource Group créé avec succès !"
-                echo "  📍 Nom: ${PREFIX}-rg-${ENV}"
+                echo "  📍 Nom: $RG_NAME"
                 echo "  🌍 Région: $LOCATION"
                 echo "  🏷️  Tags: Owner=$TAG_OWNER"
                 echo "   Project=$TAG_PROJECT"
@@ -469,15 +447,9 @@ stages:
 
                 # ── Guard: reject empty parameters ───────────────────
                 LOCATION="${{ parameters.location }}"
-                PREFIX="${{ parameters.rg_name_prefix }}"
-                ENV="${{ parameters.environment }}"
+                RG_NAME="${{ parameters.resource_group_name }}"
                 [ -z "$LOCATION" ] && LOCATION="West Europe"
-                [ -z "$PREFIX" ]   && PREFIX="mic"
-                [ -z "$ENV" ]      && ENV="dev"
-                # Auto-clean: enlever le suffixe '-rg' si inclus par erreur
-                PREFIX="${PREFIX%-rg}"
-                PREFIX="${PREFIX%-RG}"
-                RG_NAME="${PREFIX}-rg-${ENV}"
+                [ -z "$RG_NAME" ]  && { echo "❌ ERREUR: resource_group_name est vide !"; exit 1; }
                 echo "🗑️  Destruction du Resource Group: $RG_NAME"
                 # ─────────────────────────────────────────────────────
 
@@ -495,11 +467,14 @@ stages:
                 # ─────────────────────────────────────────────────────
 
                 cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)
-                terraform init
+                terraform init \
+                  -backend-config="resource_group_name=rg-terraform-state" \
+                  -backend-config="storage_account_name=pfetfstate" \
+                  -backend-config="container_name=tfstate" \
+                  -backend-config="key=rg-${RG_NAME}.tfstate"
                 terraform destroy -auto-approve \
                   -var="subscription_id=$(SUBSCRIPTION_ID)" \
-                  -var="prefix=$PREFIX" \
-                  -var="environment=$ENV" \
+                  -var="resource_group_name=$RG_NAME" \
                   -var="location=$LOCATION" \
                   -var="owner=${{ parameters.tag_owner }}" \
                   -var="tag_project=${{ parameters.tag_project }}" \

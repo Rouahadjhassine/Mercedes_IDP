@@ -41,37 +41,17 @@ spec:
     # ── STEP 2 : CONFIGURATION AZURE ─────────────────────────
     - title: "⚙️ Configuration Azure"
       description: >
-        Définissez les paramètres de base. Le nom final du RG sera: PREFIX-rg-ENVIRONMENT (ex: mic-rg-dev)
+        Définissez le nom de votre Resource Group et sa région. Le nom doit être unique et descriptif.
       required:
-        - rg_prefix
-        - environment
+        - resource_group_name
         - location
       properties:
-        rg_prefix:
-          title: "🏷️ Préfixe"
+        resource_group_name:
+          title: "🏷️ Nom du Resource Group"
           type: string
-          description: "Préfixe du nom (2–10 caractères). Format final: PREFIX-rg-ENV"
-          default: "mic"
-          maxLength: 10
-        environment:
-          title: "🌐 Environnement"
-          type: string
-          description: "Cycle de vie du déploiement"
-          default: dev
-          enum:
-            - dev
-            - test
-            - staging
-            - prod
-            - sandbox
-            - poc
-          enumNames:
-            - "🔧 Development"
-            - "🧪 Test"
-            - "🎭 Staging"
-            - "🚀 Production"
-            - "🏖️ Sandbox"
-            - "💡 Proof of Concept"
+          description: "Le nom de votre Resource Group (ex: my-project-rg-dev)"
+          default: ""
+          maxLength: 90
         location:
           title: "🌍 Région Azure"
           type: string
@@ -190,11 +170,10 @@ spec:
       input:
         url: ./skeleton
         values:
-          component_id: ${{ parameters.rg_prefix }}-rg-${{ parameters.environment }}
+          component_id: ${{ parameters.resource_group_name }}
           description: ${{ parameters.description }}
           owner: ${{ parameters.owner }}
-          rg_prefix: ${{ parameters.rg_prefix }}
-          environment: ${{ parameters.environment }}
+          resource_group_name: ${{ parameters.resource_group_name }}
           location: ${{ parameters.location }}
           tag_owner: ${{ parameters.tag_owner }}
           tag_project: ${{ parameters.tag_project }}
@@ -212,7 +191,7 @@ spec:
       action: publish:azure
       input:
         repoUrl: "dev.azure.com?organization=${{ parameters.ado_org }}&project=${{ parameters.ado_project }}&repo=${{ parameters.repo_name }}"
-        description: "🏗️ Resource Group – ${{ parameters.rg_prefix }}-rg-${{ parameters.environment }}"
+        description: "🏗️ Resource Group – ${{ parameters.resource_group_name }}"
         defaultBranch: main
 
     - id: register
@@ -233,8 +212,7 @@ spec:
         yamlPath: pipeline-resource-group.yml
         templateParameters:
           action: apply
-          rg_name_prefix: ${{ parameters.rg_prefix }}
-          environment: ${{ parameters.environment }}
+          resource_group_name: ${{ parameters.resource_group_name }}
           location: ${{ parameters.location }}
           tag_owner: ${{ parameters.tag_owner }}
           tag_project: ${{ parameters.tag_project }}
@@ -259,5 +237,5 @@ spec:
           
           Backstage a déclenché le pipeline d'infrastructure (`${{ steps['run-pipeline'].output.pipelineId }}`) automatiquement pour vous.
           
-          > 💡 Notez votre **prefix** (`${{ parameters.rg_prefix }}`) et **environnement** (`${{ parameters.environment }}`).
+          > 💡 Notez votre nom de Resource Group (`${{ parameters.resource_group_name }}`).
           > Vous en aurez besoin pour créer un Storage, Key Vault ou VM dans ce Resource Group.

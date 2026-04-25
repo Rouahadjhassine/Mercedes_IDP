@@ -53,7 +53,6 @@ spec:
           title: "📁 Nom du Resource Group"
           type: string
           description: "Le nom exact du Resource Group (ex: testfinal)"
-          default: ""
         environment:
           title: "🌐 Environnement"
           type: string
@@ -77,7 +76,6 @@ spec:
           title: "💻 Nom de la Machine Virtuelle"
           type: string
           description: "Nom de la Machine Virtuelle (max 15 caractères)"
-          default: ""
           maxLength: 15
 
     # ── STEP 3 : BASICS ───────────────────────────────────────

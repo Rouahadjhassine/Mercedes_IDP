@@ -53,7 +53,6 @@ spec:
         resource_group_name:
           title: Nom du Resource Group
           type: string
-          default: ""
         environment:
           title: "🌐 Environnement"
           type: string
@@ -76,15 +75,12 @@ spec:
         storage_account_name:
           title: Nom du Compte de Stockage
           type: string
-          default: ""
         key_vault_name:
           title: Nom du Key Vault
           type: string
-          default: ""
         vm_name:
           title: Nom de la VM (max 15 caractères)
           type: string
-          default: ""
         location:
           title: Région Azure
           type: string

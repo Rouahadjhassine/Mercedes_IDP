@@ -53,7 +53,6 @@ spec:
           title: "📁 Nom du Resource Group"
           type: string
           description: "Le nom exact du Resource Group (ex: testfinal)"
-          default: ""
         environment:
           title: "🌐 Environnement"
           type: string
@@ -77,8 +76,8 @@ spec:
           title: "📦 Nom du Compte de Stockage"
           type: string
           description: "Nom unique, lettres minuscules et chiffres uniquement (3–24 caractères)"
-          default: ""
           maxLength: 24
+          minLength: 3
 
     # ── STEP 3 : BASICS (onglet Basics du portail) ───────────
     - title: "⚙️ Basics — Configuration Storage"

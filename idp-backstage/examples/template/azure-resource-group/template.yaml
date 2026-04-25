@@ -51,8 +51,8 @@ spec:
           title: "🏷️ Nom du Resource Group"
           type: string
           description: "Le nom de votre Resource Group (ex: my-project-rg-dev)"
-          default: ""
           maxLength: 90
+          minLength: 2
         environment:
           title: "🌐 Environnement"
           type: string

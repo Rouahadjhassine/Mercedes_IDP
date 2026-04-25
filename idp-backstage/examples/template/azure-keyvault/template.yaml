@@ -52,7 +52,6 @@ spec:
           title: "📁 Nom du Resource Group"
           type: string
           description: "Le nom exact du Resource Group (ex: testfinal)"
-          default: ""
         environment:
           title: "🌐 Environnement"
           type: string
@@ -76,8 +75,8 @@ spec:
           title: "💎 Nom du Key Vault"
           type: string
           description: "Nom unique, alphanumérique et tirets (3–24 caractères)"
-          default: ""
           maxLength: 24
+          minLength: 3
 
     # ── STEP 3 : LIEN STORAGE ACCOUNT (optionnel) ────────────
     - title: "💾 Lien Storage Account (optionnel)"
@@ -104,7 +103,6 @@ spec:
           title: "📦 Nom du Storage Account lié"
           type: string
           description: "Saisissez le nom exact du Storage Account pour enregistrer son nom comme secret. Laissez vide sinon."
-          default: ""
 
     # ── STEP 4 : BASICS (onglet Basics du portail) ───────────
     - title: "⚙️ Basics — Configuration Key Vault"

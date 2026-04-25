@@ -1,8 +1,7 @@
 # ---- Variables reçues depuis main.tf racine ----
-variable "prefix"              { type = string }
-variable "environment"         { type = string }
 variable "location"            { type = string }
 variable "resource_group_name" { type = string }
+variable "vm_name"             { type = string }
 variable "vm_count"            { type = number }
 variable "vm_size"             { type = string }
 variable "vm_os_type"          { type = string }
@@ -57,15 +56,15 @@ locals {
 
 # ---- Réseau ----
 resource "azurerm_virtual_network" "vnet" {
-  name                = "${var.prefix}-vnet-${var.environment}"
+  name                = "${var.vm_name}-vnet"
   address_space       = ["10.0.0.0/16"]
   location            = var.location
   resource_group_name = var.resource_group_name
-  tags = { Environment = var.environment }
+  tags = { Module = "VM" }
 }
 
 resource "azurerm_subnet" "subnet" {
-  name                 = "${var.prefix}-subnet-${var.environment}"
+  name                 = "${var.vm_name}-subnet"
   resource_group_name  = var.resource_group_name
   virtual_network_name = azurerm_virtual_network.vnet.name
   address_prefixes     = ["10.0.1.0/24"]
@@ -74,17 +73,17 @@ resource "azurerm_subnet" "subnet" {
 # IP publique - une par VM
 resource "azurerm_public_ip" "public_ip" {
   count               = var.vm_count
-  name                = "${var.prefix}-pip-${var.environment}-${count.index}"
+  name                = "${var.vm_name}-pip-${count.index}"
   location            = var.location
   resource_group_name = var.resource_group_name
   allocation_method   = "Static"
   sku                 = "Standard"
-  tags = { Environment = var.environment }
+  tags = { Module = "VM" }
 }
 
 # NSG - règles selon l'OS choisi
 resource "azurerm_network_security_group" "nsg" {
-  name                = "${var.prefix}-nsg-${var.environment}"
+  name                = "${var.vm_name}-nsg"
   location            = var.location
   resource_group_name = var.resource_group_name
 
@@ -114,13 +113,13 @@ resource "azurerm_network_security_group" "nsg" {
     destination_address_prefix = "*"
   }
 
-  tags = { Environment = var.environment }
+  tags = { Module = "VM" }
 }
 
 # NIC - une par VM
 resource "azurerm_network_interface" "nic" {
   count               = var.vm_count
-  name                = "${var.prefix}-nic-${var.environment}-${count.index}"
+  name                = "${var.vm_name}-nic-${count.index}"
   location            = var.location
   resource_group_name = var.resource_group_name
 
@@ -130,7 +129,7 @@ resource "azurerm_network_interface" "nic" {
     private_ip_address_allocation = "Dynamic"
     public_ip_address_id          = azurerm_public_ip.public_ip[count.index].id
   }
-  tags = { Environment = var.environment }
+  tags = { Module = "VM" }
 }
 
 resource "azurerm_network_interface_security_group_association" "nic_nsg" {
@@ -142,18 +141,18 @@ resource "azurerm_network_interface_security_group_association" "nic_nsg" {
 # ---- VM Windows (créée seulement si vm_os_type = windows) ----
 resource "azurerm_windows_virtual_machine" "vm" {
   count               = var.vm_os_type == "windows" ? var.vm_count : 0
-  name                = "${var.prefix}-vm-win-${var.environment}-${count.index}"
+  name                = var.vm_count > 1 ? "${var.vm_name}-${count.index}" : var.vm_name
   resource_group_name = var.resource_group_name
   location            = var.location
   size                = var.vm_size
   admin_username      = var.vm_admin_username
   admin_password      = var.vm_admin_password
-  computer_name       = "${var.prefix}vm${count.index}"
+  computer_name       = var.vm_count > 1 ? join("", [substr(var.vm_name, 0, 12), count.index]) : substr(var.vm_name, 0, 15)
 
   network_interface_ids = [azurerm_network_interface.nic[count.index].id]
 
   os_disk {
-    name                 = "${var.prefix}-osdisk-${var.environment}-${count.index}"
+    name                 = "${var.vm_name}-osdisk-${count.index}"
     caching              = "ReadWrite"
     storage_account_type = var.vm_disk_type
   }
@@ -165,13 +164,13 @@ resource "azurerm_windows_virtual_machine" "vm" {
     version   = "latest"
   }
 
-  tags = { Environment = var.environment, OS = "windows" }
+  tags = { Module = "VM", OS = "windows" }
 }
 
 # ---- VM Linux (créée seulement si vm_os_type = linux) ----
 resource "azurerm_linux_virtual_machine" "vm" {
   count               = var.vm_os_type == "linux" ? var.vm_count : 0
-  name                = "${var.prefix}-vm-linux-${var.environment}-${count.index}"
+  name                = var.vm_count > 1 ? "${var.vm_name}-${count.index}" : var.vm_name
   resource_group_name = var.resource_group_name
   location            = var.location
   size                = var.vm_size
@@ -182,7 +181,7 @@ resource "azurerm_linux_virtual_machine" "vm" {
   network_interface_ids = [azurerm_network_interface.nic[count.index].id]
 
   os_disk {
-    name                 = "${var.prefix}-osdisk-${var.environment}-${count.index}"
+    name                 = "${var.vm_name}-osdisk-${count.index}"
     caching              = "ReadWrite"
     storage_account_type = var.vm_disk_type
   }
@@ -194,7 +193,7 @@ resource "azurerm_linux_virtual_machine" "vm" {
     version   = "latest"
   }
 
-  tags = { Environment = var.environment, OS = "linux" }
+  tags = { Module = "VM", OS = "linux" }
 }
 
 # ---- Outputs ----

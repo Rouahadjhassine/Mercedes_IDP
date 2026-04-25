@@ -40,41 +40,24 @@ spec:
               kind: Group
 
     # ── STEP 2 : RESOURCE GROUP CIBLE ────────────────────────
-    - title: "📁 Resource Group cible"
+    - title: "📁 Entête et Identité"
       description: >
-        Sélectionnez un Resource Group existant dans votre catalogue,
-        ou saisissez manuellement le préfixe et l'environnement.
+        Saisissez le nom exact du Resource Group (déjà créé) et le nom de votre futur Key Vault.
       required:
-        - rg_prefix
-        - rg_environment
+        - resource_group_name
+        - key_vault_name
       properties:
-        existing_rg:
-          title: "🔍 Sélectionner un Resource Group existant (optionnel)"
+        resource_group_name:
+          title: "📁 Nom du Resource Group"
           type: string
-          description: "Parcourez les Resource Groups enregistrés dans Backstage"
-          ui:field: EntityPicker
-          ui:options:
-            catalogFilter:
-              - kind: Component
-                spec.type: azure-resource-group
-            defaultKind: Component
-            defaultNamespace: default
-        rg_prefix:
-          title: "📁 Préfixe du Resource Group"
+          description: "Le nom exact du Resource Group (ex: testfinal)"
+          default: ""
+        key_vault_name:
+          title: "💎 Nom du Key Vault"
           type: string
-          description: "Le préfixe utilisé lors de la création du RG (ex: mic)"
-          default: "mic"
-        rg_environment:
-          title: "🌐 Environnement du Resource Group"
-          type: string
-          default: dev
-          enum:
-            - dev
-            - test
-            - staging
-            - prod
-            - sandbox
-            - poc
+          description: "Nom unique, alphanumérique et tirets (3–24 caractères)"
+          default: ""
+          maxLength: 24
 
     # ── STEP 3 : LIEN STORAGE ACCOUNT (optionnel) ────────────
     - title: "💾 Lien Storage Account (optionnel)"
@@ -97,18 +80,11 @@ spec:
                 spec.type: azure-storage-account
             defaultKind: Component
             defaultNamespace: default
-        storage_environment:
-          title: "🌐 Environnement du Storage Account"
+        link_storage_account_name:
+          title: "📦 Nom du Storage Account lié"
           type: string
-          description: "Doit correspondre à l'environnement du Storage déployé"
-          default: dev
-          enum:
-            - dev
-            - test
-            - staging
-            - prod
-            - sandbox
-            - poc
+          description: "Saisissez le nom exact du Storage Account pour enregistrer son nom comme secret. Laissez vide sinon."
+          default: ""
 
     # ── STEP 4 : BASICS (onglet Basics du portail) ───────────
     - title: "⚙️ Basics — Configuration Key Vault"
@@ -259,15 +235,14 @@ spec:
       input:
         url: ./skeleton
         values:
-          component_id: ${{ parameters.rg_prefix }}-kv-${{ parameters.rg_environment }}
+          component_id: ${{ parameters.key_vault_name }}
           description: ${{ parameters.description }}
           owner: ${{ parameters.owner }}
-          existing_rg: ${{ parameters.existing_rg }}
-          rg_prefix: ${{ parameters.rg_prefix }}
-          rg_environment: ${{ parameters.rg_environment }}
+          resource_group_name: ${{ parameters.resource_group_name }}
+          key_vault_name: ${{ parameters.key_vault_name }}
           link_storage: ${{ parameters.link_storage }}
           existing_storage: ${{ parameters.existing_storage }}
-          storage_environment: ${{ parameters.storage_environment }}
+          link_storage_account_name: ${{ parameters.link_storage_account_name }}
           location: ${{ parameters.location }}
           keyvault_sku: ${{ parameters.keyvault_sku }}
           keyvault_retention_days: ${{ parameters.keyvault_retention_days }}
@@ -289,7 +264,7 @@ spec:
       action: publish:azure
       input:
         repoUrl: "dev.azure.com?organization=${{ parameters.ado_org }}&project=${{ parameters.ado_project }}&repo=${{ parameters.repo_name }}"
-        description: "🔐 Key Vault – dans ${{ parameters.rg_prefix }}-rg-${{ parameters.rg_environment }}"
+        description: "🔐 Key Vault – dans ${{ parameters.resource_group_name }}"
         defaultBranch: main
 
     - id: register
@@ -310,8 +285,8 @@ spec:
         yamlPath: pipeline-keyvault.yml
         templateParameters:
           action: apply
-          rg_prefix: ${{ parameters.rg_prefix }}
-          rg_environment: ${{ parameters.rg_environment }}
+          resource_group_name: ${{ parameters.resource_group_name }}
+          key_vault_name: ${{ parameters.key_vault_name }}
           location: ${{ parameters.location }}
           keyvault_sku: ${{ parameters.keyvault_sku }}
           keyvault_retention_days: ${{ parameters.keyvault_retention_days }}
@@ -319,6 +294,7 @@ spec:
           keyvault_disk_encryption: ${{ parameters.keyvault_disk_encryption }}
           keyvault_deployment: ${{ parameters.keyvault_deployment }}
           link_storage: ${{ parameters.link_storage }}
+          link_storage_account_name: ${{ parameters.link_storage_account_name }}
           store_vm_password: ${{ parameters.store_vm_password }}
           tag_owner: ${{ parameters.tag_owner }}
           tag_project: ${{ parameters.tag_project }}

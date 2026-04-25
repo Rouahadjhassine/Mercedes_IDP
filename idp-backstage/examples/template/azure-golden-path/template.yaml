@@ -35,10 +35,12 @@ spec:
             catalogFilter:
               kind: Group
 
-    - title: 2. Projet & Environnement
+    - title: 2. Identité des Ressources
       required:
-        - prefix
-        - environment
+        - resource_group_name
+        - storage_account_name
+        - key_vault_name
+        - vm_name
         - location
         - subscription_id
       properties:
@@ -47,19 +49,22 @@ spec:
           type: string
           default: "0b86b0f9-d3f5-4387-8003-3b8955b9e8fa"
           description: L'identifiant de votre compte Azure
-        prefix:
-          title: Préfixe des ressources (2 à 10 chars)
+        resource_group_name:
+          title: Nom du Resource Group
           type: string
-          default: pfe
-        environment:
-          title: Environnement
+          default: ""
+        storage_account_name:
+          title: Nom du Compte de Stockage
           type: string
-          enum:
-            - dev
-            - test
-            - staging
-            - prod
-          default: dev
+          default: ""
+        key_vault_name:
+          title: Nom du Key Vault
+          type: string
+          default: ""
+        vm_name:
+          title: Nom de la VM (max 15 caractères)
+          type: string
+          default: ""
         location:
           title: Région Azure
           type: string
@@ -150,8 +155,10 @@ spec:
           component_id: ${{ parameters.component_id }}
           description: ${{ parameters.description }}
           owner: ${{ parameters.owner }}
-          prefix: ${{ parameters.prefix }}
-          environment: ${{ parameters.environment }}
+          resource_group_name: ${{ parameters.resource_group_name }}
+          storage_account_name: ${{ parameters.storage_account_name }}
+          key_vault_name: ${{ parameters.key_vault_name }}
+          vm_name: ${{ parameters.vm_name }}
           location: ${{ parameters.location }}
           ado_project: ${{ parameters.ado_project }}
           repo_name: ${{ parameters.repo_name }}

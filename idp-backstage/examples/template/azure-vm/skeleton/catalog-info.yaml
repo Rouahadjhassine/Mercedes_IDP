@@ -2,15 +2,13 @@ apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
   name: ${{ values.component_id }}
-  title: "💻 VM – dans ${{ values.rg_prefix }}-rg-${{ values.rg_environment }}"
+  title: "💻 VM – dans ${{ values.resource_group_name }}"
   description: ${{ values.description | dump }}
   annotations:
     dev.azure.com/project: "${{ values.ado_project }}"
     dev.azure.com/project-repo: "${{ values.ado_project }}/${{ values.repo_name }}"
     azure.com/resource-type: "virtual-machine"
-    azure.com/rg-name: "${{ values.rg_prefix }}-rg-${{ values.rg_environment }}"
-    azure.com/rg-prefix: "${{ values.rg_prefix }}"
-    azure.com/rg-environment: "${{ values.rg_environment }}"
+    azure.com/rg-name: "${{ values.resource_group_name }}"
     azure.com/location: "${{ values.location }}"
     azure.com/vm-size: "${{ values.vm_size }}"
     azure.com/vm-os-type: "${{ values.vm_os_type }}"
@@ -25,7 +23,4 @@ spec:
   type: azure-virtual-machine
   lifecycle: experimental
   owner: ${{ values.owner }}
-  dependsOn:
-    {% if values.existing_rg %}
-    - "${{ values.existing_rg }}"
-    {% endif %}
+

@@ -6,7 +6,7 @@ metadata:
   description: >
     Crée un Azure Storage Account (Blob, File, Queue, Table).
     ⚠️ Prérequis : un Resource Group doit exister au préalable.
-    Choisissez-en un dans la liste ou saisissez le préfixe/environnement manuellement.
+    Saisissez le nom de votre Resource Group et le nom de votre futur Compte de Stockage.
   tags:
     - azure
     - terraform
@@ -40,42 +40,25 @@ spec:
               kind: Group
 
     # ── STEP 2 : RESOURCE GROUP CIBLE ────────────────────────
-    - title: "📁 Resource Group cible"
+    - title: "📁 Entéte et Identité"
       description: >
         Sélectionnez un Resource Group existant dans votre catalogue,
-        ou saisissez manuellement le préfixe et l'environnement.
+        et choisissez le nom de votre Storage Account.
       required:
-        - rg_prefix
-        - rg_environment
+        - resource_group_name
+        - storage_account_name
       properties:
-        existing_rg:
-          title: "🔍 Sélectionner un Resource Group existant (optionnel)"
+        resource_group_name:
+          title: "📁 Nom du Resource Group"
           type: string
-          description: "Parcourez les Resource Groups déjà enregistrés dans Backstage"
-          ui:field: EntityPicker
-          ui:options:
-            catalogFilter:
-              - kind: Component
-                spec.type: azure-resource-group
-            defaultKind: Component
-            defaultNamespace: default
-        rg_prefix:
-          title: "📁 Préfixe du Resource Group"
+          description: "Le nom exact du Resource Group (ex: testfinal)"
+          default: ""
+        storage_account_name:
+          title: "📦 Nom du Compte de Stockage"
           type: string
-          description: "Le préfixe utilisé lors de la création du RG (ex: mic → mic-rg-dev)"
-          default: "mic"
-        rg_environment:
-          title: "🌐 Environnement du Resource Group"
-          type: string
-          description: "L'environnement du RG cible"
-          default: dev
-          enum:
-            - dev
-            - test
-            - staging
-            - prod
-            - sandbox
-            - poc
+          description: "Nom unique, lettres minuscules et chiffres uniquement (3–24 caractères)"
+          default: ""
+          maxLength: 24
 
     # ── STEP 3 : BASICS (onglet Basics du portail) ───────────
     - title: "⚙️ Basics — Configuration Storage"
@@ -257,12 +240,11 @@ spec:
       input:
         url: ./skeleton
         values:
-          component_id: ${{ parameters.rg_prefix }}-st-${{ parameters.rg_environment }}
+          component_id: ${{ parameters.storage_account_name }}
           description: ${{ parameters.description }}
           owner: ${{ parameters.owner }}
-          existing_rg: ${{ parameters.existing_rg }}
-          rg_prefix: ${{ parameters.rg_prefix }}
-          rg_environment: ${{ parameters.rg_environment }}
+          resource_group_name: ${{ parameters.resource_group_name }}
+          storage_account_name: ${{ parameters.storage_account_name }}
           location: ${{ parameters.location }}
           storage_kind: ${{ parameters.storage_kind }}
           storage_account_tier: ${{ parameters.storage_account_tier }}
@@ -283,7 +265,7 @@ spec:
       action: publish:azure
       input:
         repoUrl: "dev.azure.com?organization=${{ parameters.ado_org }}&project=${{ parameters.ado_project }}&repo=${{ parameters.repo_name }}"
-        description: "💾 Storage Account – dans ${{ parameters.rg_prefix }}-rg-${{ parameters.rg_environment }}"
+        description: "💾 Storage Account – dans ${{ parameters.resource_group_name }}"
         defaultBranch: main
 
     - id: register
@@ -304,8 +286,8 @@ spec:
         yamlPath: pipeline-storage.yml
         templateParameters:
           action: apply
-          rg_prefix: ${{ parameters.rg_prefix }}
-          rg_environment: ${{ parameters.rg_environment }}
+          resource_group_name: ${{ parameters.resource_group_name }}
+          storage_account_name: ${{ parameters.storage_account_name }}
           location: ${{ parameters.location }}
           storage_kind: ${{ parameters.storage_kind }}
           storage_account_tier: ${{ parameters.storage_account_tier }}

@@ -3,23 +3,17 @@ variable "subscription_id" {
   type        = string
 }
 
-variable "prefix" {
-  description = "Préfixe pour nommer les ressources"
+variable "resource_group_name" {
+  description = "Nom du Resource Group cible"
   type        = string
-  default     = "mic"
-  validation {
-    condition     = length(var.prefix) >= 2 && length(var.prefix) <= 10
-    error_message = "Le préfixe doit avoir entre 2 et 10 caractères (non vide)."
-  }
 }
 
-variable "environment" {
-  description = "Environnement cible (dev, test, staging, prod)"
+variable "key_vault_name" {
+  description = "Nom du Key Vault (3-24 caractères, unique)"
   type        = string
-  default     = "dev"
   validation {
-    condition     = contains(["dev", "test", "staging", "prod", "sandbox", "poc"], var.environment)
-    error_message = "Environnement invalide. Choix: dev | test | staging | prod | sandbox | poc"
+    condition     = length(var.key_vault_name) >= 3 && length(var.key_vault_name) <= 24
+    error_message = "Le nom du Key Vault doit avoir entre 3 et 24 caractères."
   }
 }
 

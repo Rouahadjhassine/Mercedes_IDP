@@ -6,7 +6,7 @@ metadata:
   description: >
     Crée une Machine Virtuelle Azure (Windows ou Linux).
     ⚠️ Prérequis : un Resource Group doit exister au préalable.
-    Sélectionnez-en un dans la liste ou saisissez le préfixe/environnement.
+    Saisissez le nom du Resource Group exact et le nom de votre future VM.
   tags:
     - azure
     - terraform
@@ -41,41 +41,24 @@ spec:
               kind: Group
 
     # ── STEP 2 : RESOURCE GROUP CIBLE ────────────────────────
-    - title: "📁 Resource Group cible"
+    - title: "📁 Entête et Identité"
       description: >
-        Sélectionnez un Resource Group existant dans votre catalogue,
-        ou saisissez manuellement le préfixe et l'environnement.
+        Saisissez le nom exact du Resource Group (déjà créé) et le nom de votre future Machine Virtuelle.
       required:
-        - rg_prefix
-        - rg_environment
+        - resource_group_name
+        - vm_name
       properties:
-        existing_rg:
-          title: "🔍 Sélectionner un Resource Group existant (optionnel)"
+        resource_group_name:
+          title: "📁 Nom du Resource Group"
           type: string
-          description: "Parcourez les Resource Groups enregistrés dans Backstage"
-          ui:field: EntityPicker
-          ui:options:
-            catalogFilter:
-              - kind: Component
-                spec.type: azure-resource-group
-            defaultKind: Component
-            defaultNamespace: default
-        rg_prefix:
-          title: "📁 Préfixe du Resource Group"
+          description: "Le nom exact du Resource Group (ex: testfinal)"
+          default: ""
+        vm_name:
+          title: "💻 Nom de la Machine Virtuelle"
           type: string
-          description: "Le préfixe utilisé lors de la création du RG (ex: mic)"
-          default: "mic"
-        rg_environment:
-          title: "🌐 Environnement du Resource Group"
-          type: string
-          default: dev
-          enum:
-            - dev
-            - test
-            - staging
-            - prod
-            - sandbox
-            - poc
+          description: "Nom de la Machine Virtuelle (max 15 caractères)"
+          default: ""
+          maxLength: 15
 
     # ── STEP 3 : BASICS ───────────────────────────────────────
     - title: "⚙️ Basics — Instance Details"
@@ -265,12 +248,11 @@ spec:
       input:
         url: ./skeleton
         values:
-          component_id: ${{ parameters.rg_prefix }}-vm-${{ parameters.rg_environment }}
+          component_id: ${{ parameters.vm_name }}
           description: ${{ parameters.description }}
           owner: ${{ parameters.owner }}
-          existing_rg: ${{ parameters.existing_rg }}
-          rg_prefix: ${{ parameters.rg_prefix }}
-          rg_environment: ${{ parameters.rg_environment }}
+          resource_group_name: ${{ parameters.resource_group_name }}
+          vm_name: ${{ parameters.vm_name }}
           location: ${{ parameters.location }}
           vm_count: ${{ parameters.vm_count }}
           vm_os_type: ${{ parameters.vm_os_type }}
@@ -290,7 +272,7 @@ spec:
       action: publish:azure
       input:
         repoUrl: "dev.azure.com?organization=${{ parameters.ado_org }}&project=${{ parameters.ado_project }}&repo=${{ parameters.repo_name }}"
-        description: "💻 Virtual Machine – dans ${{ parameters.rg_prefix }}-rg-${{ parameters.rg_environment }}"
+        description: "💻 Virtual Machine – dans ${{ parameters.resource_group_name }}"
         defaultBranch: main
 
     - id: register
@@ -311,8 +293,8 @@ spec:
         yamlPath: pipeline-vm.yml
         templateParameters:
           action: apply
-          rg_prefix: ${{ parameters.rg_prefix }}
-          rg_environment: ${{ parameters.rg_environment }}
+          resource_group_name: ${{ parameters.resource_group_name }}
+          vm_name: ${{ parameters.vm_name }}
           location: ${{ parameters.location }}
           vm_count: ${{ parameters.vm_count }}
           vm_os_type: ${{ parameters.vm_os_type }}

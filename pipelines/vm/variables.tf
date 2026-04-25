@@ -3,23 +3,17 @@ variable "subscription_id" {
   type        = string
 }
 
-variable "prefix" {
-  description = "Préfixe pour nommer les ressources"
+variable "resource_group_name" {
+  description = "Nom du Resource Group cible"
   type        = string
-  default     = "mic"
-  validation {
-    condition     = length(var.prefix) >= 2 && length(var.prefix) <= 10
-    error_message = "Le préfixe doit avoir entre 2 et 10 caractères (non vide)."
-  }
 }
 
-variable "environment" {
-  description = "Environnement cible (dev, test, staging, prod)"
+variable "vm_name" {
+  description = "Nom de base de la Machine Virtuelle (max 15 caractères)"
   type        = string
-  default     = "dev"
   validation {
-    condition     = contains(["dev", "test", "staging", "prod", "sandbox", "poc"], var.environment)
-    error_message = "Environnement invalide. Choix: dev | test | staging | prod | sandbox | poc"
+    condition     = length(var.vm_name) >= 1 && length(var.vm_name) <= 15
+    error_message = "Le nom de la VM doit avoir entre 1 et 15 caractères."
   }
 }
 

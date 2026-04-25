@@ -11,8 +11,10 @@ variables:
   # -------------------------------------------------------------
   SUBSCRIPTION_ID: "${{ values.subscription_id }}"
   COMPONENT_ID: "${{ values.component_id }}"
-  PREFIX: "${{ values.prefix }}"
-  ENVIRONMENT: "${{ values.environment }}"
+  RESOURCE_GROUP_NAME: "${{ values.resource_group_name }}"
+  STORAGE_ACCOUNT_NAME: "${{ values.storage_account_name }}"
+  KEY_VAULT_NAME: "${{ values.key_vault_name }}"
+  VM_NAME: "${{ values.vm_name }}"
   LOCATION: "${{ values.location }}"
   
   VM_SIZE: "${{ values.vm_size }}"
@@ -71,8 +73,7 @@ stages:
           
           terraform apply -auto-approve \
             -var="subscription_id=$(SUBSCRIPTION_ID)" \
-            -var="prefix=$(PREFIX)" \
-            -var="environment=$(ENVIRONMENT)" \
+            -var="resource_group_name=$(RESOURCE_GROUP_NAME)" \
             -var="location=$(LOCATION)"
 
     # 2. STORAGE
@@ -94,6 +95,8 @@ stages:
           
           terraform apply -auto-approve \
             -var="subscription_id=$(SUBSCRIPTION_ID)" \
+            -var="resource_group_name=$(RESOURCE_GROUP_NAME)" \
+            -var="storage_account_name=$(STORAGE_ACCOUNT_NAME)" \
             -var="storage_account_tier=$(STORAGE_TIER)" \
             -var="storage_kind=$(STORAGE_KIND)"
 
@@ -116,6 +119,8 @@ stages:
           
           terraform apply -auto-approve \
             -var="subscription_id=$(SUBSCRIPTION_ID)" \
+            -var="resource_group_name=$(RESOURCE_GROUP_NAME)" \
+            -var="key_vault_name=$(KEY_VAULT_NAME)" \
             -var="keyvault_sku=$(KV_SKU)"
 
     # 4. VM
@@ -137,5 +142,7 @@ stages:
           
           terraform apply -auto-approve \
             -var="subscription_id=$(SUBSCRIPTION_ID)" \
+            -var="resource_group_name=$(RESOURCE_GROUP_NAME)" \
+            -var="vm_name=$(VM_NAME)" \
             -var="vm_size=$(VM_SIZE)" \
             -var="vm_os_image=$(VM_OS_IMAGE)"

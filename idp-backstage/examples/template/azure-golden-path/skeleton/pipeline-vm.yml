@@ -23,22 +23,15 @@ parameters:
   # (doit correspondre au Resource Group créé par Pipeline #1)
   # ═══════════════════════════════════════════════════════════
 
-  - name: rg_prefix
-    displayName: "📁 [Resource Group] Préfixe du RG cible"
+  - name: resource_group_name
+    displayName: "📁 [Resource Group] Nom du RG cible"
     type: string
-    default: "mic"
+    default: ""
 
-  - name: rg_environment
-    displayName: "📁 [Resource Group] Environnement du RG cible"
+  - name: vm_name
+    displayName: "💻 [VM] Nom de la Machine Virtuelle (max 15 caractères)"
     type: string
-    default: "dev"
-    values:
-      - "dev"
-      - "test"
-      - "staging"
-      - "prod"
-      - "sandbox"
-      - "poc"
+    default: ""
 
   # ═══════════════════════════════════════════════════════════
   # SECTION 2 – PARAMÈTRES DE BASE VM (onglet "Basics")
@@ -195,9 +188,6 @@ stages:
       vmImage: "ubuntu-latest"
     steps:
     - checkout: self
-      path: self
-    - checkout: git://IDP-MIC/IDP-MIC
-      path: IDP-MIC
 
     - task: AzureCLI@2
       displayName: "✅ Vérifier que le RG '${{ parameters.rg_prefix }}-rg-${{ parameters.rg_environment }}' existe"
@@ -206,26 +196,15 @@ stages:
         scriptType: "bash"
         scriptLocation: "inlineScript"
         inlineScript: |
-          RG_NAME="${{ parameters.rg_prefix }}-rg-${{ parameters.rg_environment }}"
+          RG_NAME="${{ parameters.resource_group_name }}"
           RG_EXISTS=$(az group exists --name "$RG_NAME")
 
           if [ "$RG_EXISTS" = "true" ]; then
             echo "✅ Resource Group '$RG_NAME' trouvé → déploiement de la VM dans ce RG."
           else
-            # Vérifier via le remote state
-            BLOB_EXISTS=$(az storage blob exists \
-              --account-name pfetfstate \
-              --container-name tfstate \
-              --name resource-group.tfstate \
-              --query exists -o tsv 2>/dev/null || echo "false")
-
-            if [ "$BLOB_EXISTS" = "true" ]; then
-              echo "✅ Remote state Resource Group trouvé."
-            else
-              echo "❌ ERREUR: Resource Group '$RG_NAME' introuvable."
-              echo "   Lancez d'abord le Pipeline #1 (Resource Group) avec action=apply."
-              exit 1
-            fi
+            echo "❌ ERREUR: Resource Group '$RG_NAME' introuvable."
+            echo "   Lancez d'abord le Pipeline #1 (Resource Group) avec action=apply."
+            exit 1
           fi
 
 # ── STAGE 1 : VALIDATE ──────────────────────────────────────
@@ -238,9 +217,6 @@ stages:
       vmImage: "ubuntu-latest"
     steps:
     - checkout: self
-      path: self
-    - checkout: git://IDP-MIC/IDP-MIC
-      path: IDP-MIC
 
     - script: |
         wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
@@ -249,7 +225,7 @@ stages:
       displayName: "📦 Installer Terraform"
 
     - script: |
-        cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)
+        cd $(TF_WORKING_DIR)
         terraform init -backend=false
         terraform validate
       displayName: "🔍 Terraform Validate"
@@ -264,9 +240,6 @@ stages:
       vmImage: "ubuntu-latest"
     steps:
     - checkout: self
-      path: self
-    - checkout: git://IDP-MIC/IDP-MIC
-      path: IDP-MIC
 
     - script: |
         wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
@@ -287,11 +260,24 @@ stages:
           export ARM_TENANT_ID=$tenantId
           export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
 
-          cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)
-          terraform init
+          # ── Guard: fallback si paramètres vides ─────────────────
+          RG_NAME="${{ parameters.resource_group_name }}"
+          VM_NAME="${{ parameters.vm_name }}"
+          [ -z "$RG_NAME" ] && { echo "❌ ERREUR: resource_group_name est vide !"; exit 1; }
+          [ -z "$VM_NAME" ] && { echo "❌ ERREUR: vm_name est vide !"; exit 1; }
+          # ───────────────────────────────────────────────
+
+          cd $(TF_WORKING_DIR)
+          terraform init \
+            -backend-config="resource_group_name=rg-terraform-state" \
+            -backend-config="storage_account_name=pfetfstate" \
+            -backend-config="container_name=tfstate" \
+            -backend-config="key=vm-${VM_NAME}.tfstate"
 
           terraform plan \
             -var="subscription_id=$(SUBSCRIPTION_ID)" \
+            -var="resource_group_name=$RG_NAME" \
+            -var="vm_name=$VM_NAME" \
             -var="vm_count=${{ parameters.vm_count }}" \
             -var="vm_size=${{ parameters.vm_size }}" \
             -var="vm_os_type=${{ parameters.vm_os_type }}" \
@@ -318,9 +304,6 @@ stages:
         deploy:
           steps:
           - checkout: self
-            path: self
-          - checkout: git://IDP-MIC/IDP-MIC
-            path: IDP-MIC
 
           - script: |
               wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
@@ -341,15 +324,20 @@ stages:
                 export ARM_TENANT_ID=$tenantId
                 export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
 
-                cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)
-                terraform init
+                cd $(TF_WORKING_DIR)
+                VM_NAME="${{ parameters.vm_name }}"
+                terraform init \
+                  -backend-config="resource_group_name=rg-terraform-state" \
+                  -backend-config="storage_account_name=pfetfstate" \
+                  -backend-config="container_name=tfstate" \
+                  -backend-config="key=vm-${VM_NAME}.tfstate"
                 terraform apply -auto-approve \
                   $(Pipeline.Workspace)/tfplan-vm/tfplan
 
                 echo ""
                 echo "============================================"
                 echo "  ✅ VM créée avec succès !"
-                echo "  📁 RG: ${{ parameters.rg_prefix }}-rg-${{ parameters.rg_environment }}"
+                echo "  📁 RG: ${{ parameters.resource_group_name }}"
                 echo "  🌍 Région: ${{ parameters.location }}"
                 echo "  💻 OS: ${{ parameters.vm_os_type }} – ${{ parameters.vm_os_image }}"
                 echo "  📐 Taille: ${{ parameters.vm_size }} x ${{ parameters.vm_count }}"
@@ -372,9 +360,6 @@ stages:
         deploy:
           steps:
           - checkout: self
-            path: self
-          - checkout: git://IDP-MIC/IDP-MIC
-            path: IDP-MIC
 
           - script: |
               wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
@@ -395,10 +380,23 @@ stages:
                 export ARM_TENANT_ID=$tenantId
                 export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
 
-                cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)
-                terraform init
+                # ── Guard: fallback si paramètres vides ─────────────────
+                RG_NAME="${{ parameters.resource_group_name }}"
+                VM_NAME="${{ parameters.vm_name }}"
+                [ -z "$RG_NAME" ] && { echo "❌ ERREUR: resource_group_name est vide !"; exit 1; }
+                [ -z "$VM_NAME" ] && { echo "❌ ERREUR: vm_name est vide !"; exit 1; }
+                # ───────────────────────────────────────────────
+
+                cd $(TF_WORKING_DIR)
+                terraform init \
+                  -backend-config="resource_group_name=rg-terraform-state" \
+                  -backend-config="storage_account_name=pfetfstate" \
+                  -backend-config="container_name=tfstate" \
+                  -backend-config="key=vm-${VM_NAME}.tfstate"
                 terraform destroy -auto-approve \
                   -var="subscription_id=$(SUBSCRIPTION_ID)" \
+                  -var="resource_group_name=$RG_NAME" \
+                  -var="vm_name=$VM_NAME" \
                   -var="vm_count=${{ parameters.vm_count }}" \
                   -var="vm_size=${{ parameters.vm_size }}" \
                   -var="vm_os_type=${{ parameters.vm_os_type }}" \

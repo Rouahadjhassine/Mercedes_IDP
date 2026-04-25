@@ -22,22 +22,15 @@ parameters:
   # SECTION 1 – RESOURCE GROUP CIBLE
   # ═══════════════════════════════════════════════════════════
 
-  - name: rg_prefix
-    displayName: "📁 [Resource Group] Préfixe du RG cible"
+  - name: resource_group_name
+    displayName: "📁 [Resource Group] Nom du RG cible"
     type: string
-    default: "mic"
+    default: ""
 
-  - name: rg_environment
-    displayName: "📁 [Resource Group] Environnement du RG cible"
+  - name: key_vault_name
+    displayName: "💎 [Key Vault] Nom du Key Vault (3-24 caractères, unique)"
     type: string
-    default: "dev"
-    values:
-      - "dev"
-      - "test"
-      - "staging"
-      - "prod"
-      - "sandbox"
-      - "poc"
+    default: ""
 
   # ═══════════════════════════════════════════════════════════
   # SECTION 2 – STORAGE ACCOUNT LIÉ (Pipeline #3)
@@ -50,17 +43,10 @@ parameters:
     type: boolean
     default: true
 
-  - name: storage_environment
-    displayName: "🔗 [Storage] Environnement du Storage Account (si lié)"
+  - name: link_storage_account_name
+    displayName: "🔗 [Storage] Nom du Storage Account lié (optionnel)"
     type: string
-    default: "dev"
-    values:
-      - "dev"
-      - "test"
-      - "staging"
-      - "prod"
-      - "sandbox"
-      - "poc"
+    default: ""
 
   # ═══════════════════════════════════════════════════════════
   # SECTION 3 – BASICS (onglet "Basics")
@@ -201,9 +187,6 @@ stages:
       vmImage: "ubuntu-latest"
     steps:
     - checkout: self
-      path: self
-    - checkout: git://IDP-MIC/IDP-MIC
-      path: IDP-MIC
 
     - task: AzureCLI@2
       displayName: "✅ Vérifier RG + Storage liés"
@@ -212,37 +195,20 @@ stages:
         scriptType: "bash"
         scriptLocation: "inlineScript"
         inlineScript: |
-          RG_NAME="${{ parameters.rg_prefix }}-rg-${{ parameters.rg_environment }}"
+          RG_NAME="${{ parameters.resource_group_name }}"
 
           # Vérifier Resource Group (obligatoire)
           RG_EXISTS=$(az group exists --name "$RG_NAME")
           if [ "$RG_EXISTS" = "true" ]; then
             echo "✅ Resource Group '$RG_NAME' trouvé."
           else
-            BLOB_EXISTS=$(az storage blob exists \
-              --account-name pfetfstate --container-name tfstate \
-              --name resource-group.tfstate --query exists -o tsv 2>/dev/null || echo "false")
-            if [ "$BLOB_EXISTS" = "true" ]; then
-              echo "✅ Remote state RG trouvé."
-            else
-              echo "❌ ERREUR: Resource Group introuvable. Lancez d'abord Pipeline #1."
-              exit 1
-            fi
+            echo "❌ ERREUR: Resource Group introuvable. Lancez d'abord Pipeline #1."
+            exit 1
           fi
 
-          # Vérifier Storage (optionnel selon paramètre link_storage)
+          # Le Storage est maintenant vérifié lors du plan Terraform (s'il est passé en option)
           if [ "${{ parameters.link_storage }}" = "True" ]; then
-            ST_EXISTS=$(az storage blob exists \
-              --account-name pfetfstate --container-name tfstate \
-              --name storage.tfstate --query exists -o tsv 2>/dev/null || echo "false")
-            if [ "$ST_EXISTS" = "true" ]; then
-              echo "✅ Storage Account lié trouvé → son nom sera stocké comme secret dans le KV."
-            else
-              echo "⚠️  Storage remote state introuvable. Le secret 'storage-account-name' ne sera pas créé."
-              echo "   Lancez d'abord Pipeline #3 si vous souhaitez lier le Storage."
-            fi
-          else
-            echo "ℹ️  Liaison Storage désactivée (paramètre link_storage = false)."
+            echo "ℹ️  La liaison Storage est activée. Terraform tentera d'utiliser '${{ parameters.link_storage_account_name }}'."
           fi
 
 # ── STAGE 1 : VALIDATE ──────────────────────────────────────
@@ -255,9 +221,6 @@ stages:
       vmImage: "ubuntu-latest"
     steps:
     - checkout: self
-      path: self
-    - checkout: git://IDP-MIC/IDP-MIC
-      path: IDP-MIC
 
     - script: |
         wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
@@ -266,7 +229,7 @@ stages:
       displayName: "📦 Installer Terraform"
 
     - script: |
-        cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)
+        cd $(TF_WORKING_DIR)
         terraform init -backend=false
         terraform validate
       displayName: "🔍 Terraform Validate"
@@ -281,9 +244,6 @@ stages:
       vmImage: "ubuntu-latest"
     steps:
     - checkout: self
-      path: self
-    - checkout: git://IDP-MIC/IDP-MIC
-      path: IDP-MIC
 
     - script: |
         wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
@@ -304,17 +264,31 @@ stages:
           export ARM_TENANT_ID=$tenantId
           export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
 
-          cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)
-          terraform init
+          # ── Guard: fallback si paramètres vides ─────────────────
+          RG_NAME="${{ parameters.resource_group_name }}"
+          KV_NAME="${{ parameters.key_vault_name }}"
+          [ -z "$RG_NAME" ] && { echo "❌ ERREUR: resource_group_name est vide !"; exit 1; }
+          [ -z "$KV_NAME" ] && { echo "❌ ERREUR: key_vault_name est vide !"; exit 1; }
+          # ───────────────────────────────────────────────
+
+          cd $(TF_WORKING_DIR)
+          terraform init \
+            -backend-config="resource_group_name=rg-terraform-state" \
+            -backend-config="storage_account_name=pfetfstate" \
+            -backend-config="container_name=tfstate" \
+            -backend-config="key=kv-${KV_NAME}.tfstate"
 
           terraform plan \
             -var="subscription_id=$(SUBSCRIPTION_ID)" \
+            -var="resource_group_name=$RG_NAME" \
+            -var="key_vault_name=$KV_NAME" \
+            -var="linked_storage_account_name=$([ '${{ parameters.link_storage }}' = 'True' ] && echo '${{ parameters.link_storage_account_name }}' || echo '')" \
             -var="keyvault_sku=${{ parameters.keyvault_sku }}" \
             -var="keyvault_purge_protection=$([ '${{ parameters.keyvault_purge_protection }}' = 'True' ] && echo true || echo false)" \
             -var="keyvault_disk_encryption=$([ '${{ parameters.keyvault_disk_encryption }}' = 'True' ] && echo true || echo false)" \
             -var="keyvault_deployment=$([ '${{ parameters.keyvault_deployment }}' = 'True' ] && echo true || echo false)" \
             -var="keyvault_retention_days=${{ parameters.keyvault_retention_days }}" \
-            -var="vm_admin_password=$([ '${{ parameters.store_vm_password }}' = 'True' ] && echo $VM_ADMIN_PASSWORD || echo 'not-stored')" \
+            -var="vm_admin_password=$([ '${{ parameters.store_vm_password }}' = 'True' ] && echo $VM_ADMIN_PASSWORD || echo '')" \
             -out=$(Build.ArtifactStagingDirectory)/tfplan
 
     - publish: $(Build.ArtifactStagingDirectory)/tfplan
@@ -335,9 +309,6 @@ stages:
         deploy:
           steps:
           - checkout: self
-            path: self
-          - checkout: git://IDP-MIC/IDP-MIC
-            path: IDP-MIC
 
           - script: |
               wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
@@ -358,25 +329,29 @@ stages:
                 export ARM_TENANT_ID=$tenantId
                 export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
 
-                cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)
-                terraform init
+                cd $(TF_WORKING_DIR)
+                KV_NAME="${{ parameters.key_vault_name }}"
+                terraform init \
+                  -backend-config="resource_group_name=rg-terraform-state" \
+                  -backend-config="storage_account_name=pfetfstate" \
+                  -backend-config="container_name=tfstate" \
+                  -backend-config="key=kv-${KV_NAME}.tfstate"
                 terraform apply -auto-approve \
                   $(Pipeline.Workspace)/tfplan-keyvault/tfplan
 
                 echo ""
                 echo "============================================"
                 echo "  ✅ Key Vault créé avec succès !"
-                echo "  📁 RG: ${{ parameters.rg_prefix }}-rg-${{ parameters.rg_environment }}"
+                echo "  📁 RG: ${{ parameters.resource_group_name }}"
                 echo "  🌍 Région: ${{ parameters.location }}"
                 echo "  💎 SKU: ${{ parameters.keyvault_sku }}"
                 echo "  🔒 Purge protection: ${{ parameters.keyvault_purge_protection }}"
                 echo "  🔑 Secrets stockés:"
-                echo "     - environment-name"
                 if [ "${{ parameters.store_vm_password }}" = "True" ]; then
                   echo "     - vm-admin-password"
                 fi
                 if [ "${{ parameters.link_storage }}" = "True" ]; then
-                  echo "     - storage-account-name (depuis Pipeline #3)"
+                  echo "     - storage-account-name (lié au storage ${_link_storage_account})"
                 fi
                 echo "============================================"
                 terraform output
@@ -396,9 +371,6 @@ stages:
         deploy:
           steps:
           - checkout: self
-            path: self
-          - checkout: git://IDP-MIC/IDP-MIC
-            path: IDP-MIC
 
           - script: |
               wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
@@ -419,10 +391,24 @@ stages:
                 export ARM_TENANT_ID=$tenantId
                 export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
 
-                cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)
-                terraform init
+                # ── Guard: fallback si paramètres vides ─────────────────
+                RG_NAME="${{ parameters.resource_group_name }}"
+                KV_NAME="${{ parameters.key_vault_name }}"
+                [ -z "$RG_NAME" ] && { echo "❌ ERREUR: resource_group_name est vide !"; exit 1; }
+                [ -z "$KV_NAME" ] && { echo "❌ ERREUR: key_vault_name est vide !"; exit 1; }
+                # ───────────────────────────────────────────────
+
+                cd $(TF_WORKING_DIR)
+                terraform init \
+                  -backend-config="resource_group_name=rg-terraform-state" \
+                  -backend-config="storage_account_name=pfetfstate" \
+                  -backend-config="container_name=tfstate" \
+                  -backend-config="key=kv-${KV_NAME}.tfstate"
                 terraform destroy -auto-approve \
                   -var="subscription_id=$(SUBSCRIPTION_ID)" \
+                  -var="resource_group_name=$RG_NAME" \
+                  -var="key_vault_name=$KV_NAME" \
+                  -var="linked_storage_account_name=$([ '${{ parameters.link_storage }}' = 'True' ] && echo '${{ parameters.link_storage_account_name }}' || echo '')" \
                   -var="keyvault_sku=${{ parameters.keyvault_sku }}" \
                   -var="keyvault_purge_protection=$([ '${{ parameters.keyvault_purge_protection }}' = 'True' ] && echo true || echo false)" \
                   -var="keyvault_disk_encryption=$([ '${{ parameters.keyvault_disk_encryption }}' = 'True' ] && echo true || echo false)" \

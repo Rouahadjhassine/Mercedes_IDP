@@ -1,8 +1,7 @@
 # ---- Variables reçues depuis main.tf racine ----
-variable "prefix"                    { type = string }
-variable "environment"               { type = string }
 variable "location"                  { type = string }
 variable "resource_group_name"       { type = string }
+variable "key_vault_name"            { type = string }
 variable "suffix"                    { type = string }
 variable "tenant_id"                 { type = string }
 variable "object_id"                 { type = string }
@@ -17,7 +16,7 @@ variable "vm_admin_password" {
 }
 
 resource "azurerm_key_vault" "kv" {
-  name                        = "${var.prefix}-kv-${var.suffix}"
+  name                        = "${var.key_vault_name}-${var.suffix}"
   location                    = var.location
   resource_group_name         = var.resource_group_name
   tenant_id                   = var.tenant_id
@@ -35,7 +34,7 @@ resource "azurerm_key_vault" "kv" {
     certificate_permissions = ["Get","List","Create","Delete","Recover","Purge"]
   }
 
-  tags = { Environment = var.environment }
+  tags = { Module = "KeyVault" }
 }
 
 resource "azurerm_key_vault_secret" "vm_password" {
@@ -45,12 +44,7 @@ resource "azurerm_key_vault_secret" "vm_password" {
   depends_on   = [azurerm_key_vault.kv]
 }
 
-resource "azurerm_key_vault_secret" "environment_name" {
-  name         = "environment-name"
-  value        = var.environment
-  key_vault_id = azurerm_key_vault.kv.id
-  depends_on   = [azurerm_key_vault.kv]
-}
+# Secrètes liées à l'environnement supprimées car l'environnement n'est plus passé
 
 output "key_vault_name" { value = azurerm_key_vault.kv.name }
 output "key_vault_id"   { value = azurerm_key_vault.kv.id }

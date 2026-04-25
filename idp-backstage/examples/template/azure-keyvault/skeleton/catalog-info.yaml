@@ -2,15 +2,13 @@ apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
   name: ${{ values.component_id }}
-  title: "🔐 Key Vault – dans ${{ values.rg_prefix }}-rg-${{ values.rg_environment }}"
+  title: "🔐 Key Vault – dans ${{ values.resource_group_name }}"
   description: ${{ values.description | dump }}
   annotations:
     dev.azure.com/project: "${{ values.ado_project }}"
     dev.azure.com/project-repo: "${{ values.ado_project }}/${{ values.repo_name }}"
     azure.com/resource-type: "key-vault"
-    azure.com/rg-name: "${{ values.rg_prefix }}-rg-${{ values.rg_environment }}"
-    azure.com/rg-prefix: "${{ values.rg_prefix }}"
-    azure.com/rg-environment: "${{ values.rg_environment }}"
+    azure.com/rg-name: "${{ values.resource_group_name }}"
     azure.com/location: "${{ values.location }}"
     azure.com/keyvault-sku: "${{ values.keyvault_sku }}"
     azure.com/keyvault-purge-protection: "${{ values.keyvault_purge_protection }}"
@@ -24,9 +22,6 @@ spec:
   lifecycle: experimental
   owner: ${{ values.owner }}
   dependsOn:
-    {% if values.existing_rg %}
-    - "${{ values.existing_rg }}"
-    {% endif %}
     {% if values.link_storage and values.existing_storage %}
     - "${{ values.existing_storage }}"
     {% endif %}

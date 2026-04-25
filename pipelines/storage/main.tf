@@ -1,15 +1,9 @@
 # Pipeline Storage – Lit le Resource Group depuis le remote state du Pipeline 1
 # et déploie le Storage Account en utilisant le module ./modules/storage
 
-# ---- Lecture du remote state du Pipeline Resource Group ----
-data "terraform_remote_state" "rg" {
-  backend = "azurerm"
-  config = {
-    resource_group_name  = "rg-terraform-state"
-    storage_account_name = "pfetfstate"
-    container_name       = "tfstate"
-    key                  = "resource-group.tfstate"
-  }
+# ---- Récupération des infos du Resource Group existant ----
+data "azurerm_resource_group" "rg" {
+  name = var.resource_group_name
 }
 
 # ---- Suffixe aléatoire pour le nom du Storage Account ----
@@ -21,11 +15,10 @@ resource "random_string" "suffix" {
 
 # ---- Module Storage (réutilise le module existant) ----
 module "storage" {
-  source              = "../../modules/storage"
-  prefix              = data.terraform_remote_state.rg.outputs.prefix
-  environment         = data.terraform_remote_state.rg.outputs.environment
-  location            = data.terraform_remote_state.rg.outputs.resource_group_location
-  resource_group_name = data.terraform_remote_state.rg.outputs.resource_group_name
+  source               = "../../modules/storage"
+  resource_group_name  = data.azurerm_resource_group.rg.name
+  location             = data.azurerm_resource_group.rg.location
+  storage_account_name = var.storage_account_name
   suffix              = random_string.suffix.result
 
   storage_account_tier     = var.storage_account_tier

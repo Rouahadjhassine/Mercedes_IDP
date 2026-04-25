@@ -29,11 +29,11 @@ parameters:
       - "MIC-SECOPS-STAGING"
       - "MIC-SECOPS-PROD"
 
-  # ── NOM DU RESOURCE GROUP ─────────────────────────────────
-  - name: rg_name_prefix
-    displayName: "🏷️ Préfixe du nom (format: PREFIX-rg-ENV)"
+  # ── NOM DU RESOURCE GROUP ─────────────────────────────────────
+  - name: resource_group_name
+    displayName: "🏷️ Nom du Resource Group (texte libre)"
     type: string
-    default: "mic"
+    default: ""
 
   # ── RÉGION ────────────────────────────────────────────────
   - name: location
@@ -66,18 +66,6 @@ parameters:
       - "Australia East"
       - "Japan East"
 
-  # ── ENVIRONNEMENT ─────────────────────────────────────────
-  - name: environment
-    displayName: "🌐 Environnement"
-    type: string
-    default: "dev"
-    values:
-      - "dev"
-      - "test"
-      - "staging"
-      - "prod"
-      - "sandbox"
-      - "poc"
 
   # ─────────────────────────────────────────────────────────
   # TAGS (comme dans l'onglet "Tags" du portail Azure)
@@ -270,22 +258,23 @@ stages:
           export ARM_TENANT_ID=$tenantId
           export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
 
-          # ── Guard: fallback si paramètres vides ─────────────────
+          # ── Guard: fallback si nom vide ──────────────────────────
+          RG_NAME="${{ parameters.resource_group_name }}"
           LOCATION="${{ parameters.location }}"
-          PREFIX="${{ parameters.rg_name_prefix }}"
-          ENV="${{ parameters.environment }}"
+          [ -z "$RG_NAME" ]   && { echo '❌ ERREUR: resource_group_name est vide !'; exit 1; }
           [ -z "$LOCATION" ] && LOCATION="West Europe"
-          [ -z "$PREFIX" ]   && PREFIX="mic"
-          [ -z "$ENV" ]      && ENV="dev"
           # ───────────────────────────────────────────────────────
 
           cd $(TF_WORKING_DIR)
-          terraform init
+          terraform init \
+            -backend-config="resource_group_name=rg-terraform-state" \
+            -backend-config="storage_account_name=pfetfstate" \
+            -backend-config="container_name=tfstate" \
+            -backend-config="key=rg-${RG_NAME}.tfstate"
 
           terraform plan \
             -var="subscription_id=$(SUBSCRIPTION_ID)" \
-            -var="prefix=$PREFIX" \
-            -var="environment=$ENV" \
+            -var="resource_group_name=$RG_NAME" \
             -var="location=$LOCATION" \
             -var="owner=${{ parameters.tag_owner }}" \
             -var="tag_project=${{ parameters.tag_project }}" \
@@ -333,15 +322,19 @@ stages:
                 export ARM_TENANT_ID=$tenantId
                 export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
 
+                RG_NAME="${{ parameters.resource_group_name }}"
                 cd $(TF_WORKING_DIR)
-                terraform init
-                terraform apply -auto-approve \
-                  $(Pipeline.Workspace)/tfplan-rg/tfplan
+                terraform init \
+                  -backend-config="resource_group_name=rg-terraform-state" \
+                  -backend-config="storage_account_name=pfetfstate" \
+                  -backend-config="container_name=tfstate" \
+                  -backend-config="key=rg-${RG_NAME}.tfstate"
+                terraform apply -auto-approve $(Pipeline.Workspace)/tfplan-rg/tfplan
 
                 echo ""
                 echo "============================================"
                 echo "  ✅ Resource Group créé avec succès !"
-                echo "  📍 Nom: ${{ parameters.rg_name_prefix }}-rg-${{ parameters.environment }}"
+                echo "  📍 Nom: ${{ parameters.resource_group_name }}"
                 echo "  🌍 Région: ${{ parameters.location }}"
                 echo "  🏷️  Tags: Owner=${{ parameters.tag_owner }}"
                 echo "   Project=${{ parameters.tag_project }}"
@@ -386,20 +379,21 @@ stages:
                 export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
 
                 # ── Guard: reject empty parameters ───────────────────
+                RG_NAME="${{ parameters.resource_group_name }}"
                 LOCATION="${{ parameters.location }}"
-                PREFIX="${{ parameters.rg_name_prefix }}"
-                ENV="${{ parameters.environment }}"
+                [ -z "$RG_NAME" ]   && { echo '❌ ERREUR: resource_group_name est vide !'; exit 1; }
                 [ -z "$LOCATION" ] && LOCATION="West Europe"
-                [ -z "$PREFIX" ]   && PREFIX="mic"
-                [ -z "$ENV" ]      && ENV="dev"
                 # ─────────────────────────────────────────────────────
 
                 cd $(TF_WORKING_DIR)
-                terraform init
+                terraform init \
+                  -backend-config="resource_group_name=rg-terraform-state" \
+                  -backend-config="storage_account_name=pfetfstate" \
+                  -backend-config="container_name=tfstate" \
+                  -backend-config="key=rg-${RG_NAME}.tfstate"
                 terraform destroy -auto-approve \
                   -var="subscription_id=$(SUBSCRIPTION_ID)" \
-                  -var="prefix=$PREFIX" \
-                  -var="environment=$ENV" \
+                  -var="resource_group_name=$RG_NAME" \
                   -var="location=$LOCATION" \
                   -var="owner=${{ parameters.tag_owner }}" \
                   -var="tag_project=${{ parameters.tag_project }}" \

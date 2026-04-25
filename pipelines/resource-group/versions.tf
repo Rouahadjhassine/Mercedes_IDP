@@ -7,12 +7,7 @@ terraform {
     }
   }
 
-  backend "azurerm" {
-    resource_group_name  = "rg-terraform-state"
-    storage_account_name = "pfetfstate"
-    container_name       = "tfstate"
-    key                  = "resource-group.tfstate"
-  }
+  backend "azurerm" {}
 }
 
 provider "azurerm" {

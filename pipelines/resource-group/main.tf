@@ -2,7 +2,7 @@
 # Tous les tags viennent des paramètres du pipeline (listes déroulantes)
 
 resource "azurerm_resource_group" "rg" {
-  name     = "${var.prefix}-rg-${var.environment}"
+  name     = var.resource_group_name
   location = var.location
 
   tags = {

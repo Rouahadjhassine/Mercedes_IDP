@@ -3,23 +3,12 @@ variable "subscription_id" {
   type        = string
 }
 
-variable "prefix" {
-  description = "Préfixe pour nommer le Resource Group (ex: mic-rg-dev)"
+variable "resource_group_name" {
+  description = "Nom exact du Resource Group à créer dans Azure"
   type        = string
-  default     = "mic"
   validation {
-    condition     = length(var.prefix) >= 2 && length(var.prefix) <= 10
-    error_message = "Le préfixe doit avoir entre 2 et 10 caractères (non vide)."
-  }
-}
-
-variable "environment" {
-  description = "Environnement cible"
-  type        = string
-  default     = "dev"
-  validation {
-    condition     = contains(["dev", "test", "staging", "prod", "sandbox", "poc"], var.environment)
-    error_message = "Environnement invalide. Choix: dev | test | staging | prod | sandbox | poc"
+    condition     = length(var.resource_group_name) >= 1 && length(var.resource_group_name) <= 90
+    error_message = "Le nom du Resource Group doit avoir entre 1 et 90 caractères."
   }
 }
 

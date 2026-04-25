@@ -13,12 +13,3 @@ output "resource_group_id" {
   value       = azurerm_resource_group.rg.id
 }
 
-output "environment" {
-  description = "Environnement déployé"
-  value       = var.environment
-}
-
-output "prefix" {
-  description = "Préfixe utilisé pour nommer les ressources"
-  value       = var.prefix
-}

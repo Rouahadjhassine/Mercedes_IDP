@@ -280,17 +280,22 @@ stages:
             echo "⚠️ bs-params.sh not found!"
           fi
 
-          # ── Guard: variables injectées par Backstage ou paramètres ADO ──────────────────────────
+          # ── Résolution des variables (priorité: bs-params.sh > paramètres ADO) ──────────────────────────
           RG_NAME="${BS_RESOURCE_GROUP_NAME:-${{ parameters.resource_group_name }}}"
           LOCATION="${BS_LOCATION:-${{ parameters.location }}}"
           ENVIRONMENT="${BS_ENVIRONMENT:-${{ parameters.environment }}}"
-          echo "🔍 DEBUG: resource_group_name reçu = '${RG_NAME}'"
-          echo "🔍 DEBUG: location reçu           = '${LOCATION}'"
-          echo "🔍 DEBUG: environment           = '${ENVIRONMENT}'"
-          # Fallback sur la valeur par défaut déclarée dans le paramètre YAML
-          [ -z "$RG_NAME" ]   && RG_NAME="rg-monprojet-test"
-          [ -z "$LOCATION" ]  && LOCATION="West Europe"
+          echo "📋 === Résolution des paramètres ==="
+          echo "   BS_RESOURCE_GROUP_NAME  = '${BS_RESOURCE_GROUP_NAME}'"
+          echo "   ADO resource_group_name = '${{ parameters.resource_group_name }}'"
+          echo "   ➡️  RG_NAME effectif    = '${RG_NAME}'"
+          echo "   LOCATION               = '${LOCATION}'"
+          echo "   ENVIRONMENT            = '${ENVIRONMENT}'"
+          [ -z "$LOCATION" ]    && LOCATION="West Europe"
           [ -z "$ENVIRONMENT" ] && ENVIRONMENT="dev"
+          if [ -z "$RG_NAME" ]; then
+            echo "❌ ERREUR CRITIQUE: resource_group_name est vide ! Vérifiez bs-params.sh et les templateParameters Backstage."
+            exit 1
+          fi
           echo "✅ Valeurs effectives: RG=$RG_NAME | LOCATION=$LOCATION | ENV=$ENVIRONMENT"
           # ───────────────────────────────────────────────────────
 
@@ -362,12 +367,19 @@ stages:
                   echo "⚠️ bs-params.sh not found!"
                 fi
 
+                # ── Résolution des variables (priorité: bs-params.sh > paramètres ADO) ─────────────────
                 RG_NAME="${BS_RESOURCE_GROUP_NAME:-${{ parameters.resource_group_name }}}"
                 LOCATION="${BS_LOCATION:-${{ parameters.location }}}"
                 ENVIRONMENT="${BS_ENVIRONMENT:-${{ parameters.environment }}}"
-
-                [ -z "$RG_NAME" ]   && RG_NAME="rg-monprojet-test"
-                [ -z "$LOCATION" ]  && LOCATION="West Europe"
+                echo "📋 === Résolution des paramètres ==="
+                echo "   BS_RESOURCE_GROUP_NAME = '${BS_RESOURCE_GROUP_NAME}'"
+                echo "   ADO resource_group_name = '${{ parameters.resource_group_name }}'"
+                echo "   ➡️  RG_NAME effectif    = '${RG_NAME}'"
+                if [ -z "$RG_NAME" ]; then
+                  echo "❌ ERREUR CRITIQUE: resource_group_name est vide !"
+                  exit 1
+                fi
+                [ -z "$LOCATION" ]    && LOCATION="West Europe"
                 [ -z "$ENVIRONMENT" ] && ENVIRONMENT="dev"
 
                 cd $(TF_WORKING_DIR)
@@ -435,16 +447,20 @@ stages:
                   echo "⚠️ bs-params.sh not found!"
                 fi
 
-                # ── Guard: variables injectées par Backstage ou paramètres ADO ──────────────────────────
+                # ── Résolution des variables (priorité: bs-params.sh > paramètres ADO) ──────────────────────────
                 RG_NAME="${BS_RESOURCE_GROUP_NAME:-${{ parameters.resource_group_name }}}"
                 LOCATION="${BS_LOCATION:-${{ parameters.location }}}"
                 ENVIRONMENT="${BS_ENVIRONMENT:-${{ parameters.environment }}}"
-                echo "🔍 DEBUG: resource_group_name reçu = '${RG_NAME}'"
-                echo "🔍 DEBUG: location reçu           = '${LOCATION}'"
-                echo "🔍 DEBUG: environment           = '${ENVIRONMENT}'"
-                [ -z "$RG_NAME" ]   && RG_NAME="rg-monprojet-test"
-                [ -z "$LOCATION" ]  && LOCATION="West Europe"
+                echo "📋 === Résolution des paramètres ==="
+                echo "   BS_RESOURCE_GROUP_NAME  = '${BS_RESOURCE_GROUP_NAME}'"
+                echo "   ADO resource_group_name = '${{ parameters.resource_group_name }}'"
+                echo "   ➡️  RG_NAME effectif    = '${RG_NAME}'"
+                [ -z "$LOCATION" ]    && LOCATION="West Europe"
                 [ -z "$ENVIRONMENT" ] && ENVIRONMENT="dev"
+                if [ -z "$RG_NAME" ]; then
+                  echo "❌ ERREUR CRITIQUE: resource_group_name est vide ! Impossible de destroyer."
+                  exit 1
+                fi
                 echo "✅ Valeurs effectives: RG=$RG_NAME | LOCATION=$LOCATION | ENV=$ENVIRONMENT"
                 # ─────────────────────────────────────────────────────
 

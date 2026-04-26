@@ -208,7 +208,7 @@ stages:
         scriptType: "bash"
         scriptLocation: "inlineScript"
         inlineScript: |
-          RG_NAME="${{ parameters.resource_group_name }}"
+          RG_NAME="${BS_RESOURCE_GROUP_NAME:-${{ parameters.resource_group_name }}}"
           RG_EXISTS=$(az group exists --name "$RG_NAME")
 
           if [ "$RG_EXISTS" = "true" ]; then
@@ -271,10 +271,20 @@ stages:
           export ARM_CLIENT_SECRET=$servicePrincipalKey
           export ARM_TENANT_ID=$tenantId
           export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+          # ── Guard: Charger les variables Backstage si présentes ──
+          if [ -f "$(Pipeline.Workspace)/self/bs-params.sh" ]; then
+            source "$(Pipeline.Workspace)/self/bs-params.sh"
+            echo "✅ Sourced bs-params.sh from $(Pipeline.Workspace)/self"
+          elif [ -f "bs-params.sh" ]; then
+            source "bs-params.sh"
+            echo "✅ Sourced bs-params.sh from current directory"
+          else
+            echo "⚠️ bs-params.sh not found!"
+          fi
 
           # ── Guard: fallback si paramètres vides ─────────────────
-          RG_NAME="${{ parameters.resource_group_name }}"
-          VM_NAME="${{ parameters.vm_name }}"
+          RG_NAME="${BS_RESOURCE_GROUP_NAME:-${{ parameters.resource_group_name }}}"
+          VM_NAME="${BS_VM_NAME:-${{ parameters.vm_name }}}"
           [ -z "$RG_NAME" ] && { echo "❌ ERREUR: resource_group_name est vide !"; exit 1; }
           [ -z "$VM_NAME" ] && { echo "❌ ERREUR: vm_name est vide !"; exit 1; }
           # ───────────────────────────────────────────────
@@ -335,9 +345,19 @@ stages:
                 export ARM_CLIENT_SECRET=$servicePrincipalKey
                 export ARM_TENANT_ID=$tenantId
                 export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+                # ── Guard: Charger les variables Backstage si présentes ──
+                if [ -f "$(Pipeline.Workspace)/self/bs-params.sh" ]; then
+                  source "$(Pipeline.Workspace)/self/bs-params.sh"
+                  echo "✅ Sourced bs-params.sh from $(Pipeline.Workspace)/self"
+                elif [ -f "bs-params.sh" ]; then
+                  source "bs-params.sh"
+                  echo "✅ Sourced bs-params.sh from current directory"
+                else
+                  echo "⚠️ bs-params.sh not found!"
+                fi
 
                 cd $(TF_WORKING_DIR)
-                VM_NAME="${{ parameters.vm_name }}"
+                VM_NAME="${BS_VM_NAME:-${{ parameters.vm_name }}}"
                 terraform init \
                   -backend-config="resource_group_name=rg-terraform-state" \
                   -backend-config="storage_account_name=pfetfstate" \
@@ -391,10 +411,20 @@ stages:
                 export ARM_CLIENT_SECRET=$servicePrincipalKey
                 export ARM_TENANT_ID=$tenantId
                 export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+                # ── Guard: Charger les variables Backstage si présentes ──
+                if [ -f "$(Pipeline.Workspace)/self/bs-params.sh" ]; then
+                  source "$(Pipeline.Workspace)/self/bs-params.sh"
+                  echo "✅ Sourced bs-params.sh from $(Pipeline.Workspace)/self"
+                elif [ -f "bs-params.sh" ]; then
+                  source "bs-params.sh"
+                  echo "✅ Sourced bs-params.sh from current directory"
+                else
+                  echo "⚠️ bs-params.sh not found!"
+                fi
 
                 # ── Guard: fallback si paramètres vides ─────────────────
-                RG_NAME="${{ parameters.resource_group_name }}"
-                VM_NAME="${{ parameters.vm_name }}"
+                RG_NAME="${BS_RESOURCE_GROUP_NAME:-${{ parameters.resource_group_name }}}"
+                VM_NAME="${BS_VM_NAME:-${{ parameters.vm_name }}}"
                 [ -z "$RG_NAME" ] && { echo "❌ ERREUR: resource_group_name est vide !"; exit 1; }
                 [ -z "$VM_NAME" ] && { echo "❌ ERREUR: vm_name est vide !"; exit 1; }
                 # ───────────────────────────────────────────────

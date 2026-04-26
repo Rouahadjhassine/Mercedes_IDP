@@ -207,7 +207,7 @@ stages:
         scriptType: "bash"
         scriptLocation: "inlineScript"
         inlineScript: |
-          RG_NAME="${{ parameters.resource_group_name }}"
+          RG_NAME="${BS_RESOURCE_GROUP_NAME:-${{ parameters.resource_group_name }}}"
 
           # Vérifier Resource Group (obligatoire)
           RG_EXISTS=$(az group exists --name "$RG_NAME")
@@ -278,9 +278,19 @@ stages:
           export ARM_CLIENT_SECRET=$servicePrincipalKey
           export ARM_TENANT_ID=$tenantId
           export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+          # ── Guard: Charger les variables Backstage si présentes ──
+          if [ -f "$(Pipeline.Workspace)/self/bs-params.sh" ]; then
+            source "$(Pipeline.Workspace)/self/bs-params.sh"
+            echo "✅ Sourced bs-params.sh from $(Pipeline.Workspace)/self"
+          elif [ -f "bs-params.sh" ]; then
+            source "bs-params.sh"
+            echo "✅ Sourced bs-params.sh from current directory"
+          else
+            echo "⚠️ bs-params.sh not found!"
+          fi
 
           # ── Guard: fallback si paramètres vides ─────────────────
-          RG_NAME="${{ parameters.resource_group_name }}"
+          RG_NAME="${BS_RESOURCE_GROUP_NAME:-${{ parameters.resource_group_name }}}"
           KV_NAME="${{ parameters.key_vault_name }}"
           [ -z "$RG_NAME" ] && RG_NAME="rg-monprojet-test"
           [ -z "$KV_NAME" ] && KV_NAME="kv-monprojet-test"
@@ -343,6 +353,16 @@ stages:
                 export ARM_CLIENT_SECRET=$servicePrincipalKey
                 export ARM_TENANT_ID=$tenantId
                 export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+                # ── Guard: Charger les variables Backstage si présentes ──
+                if [ -f "$(Pipeline.Workspace)/self/bs-params.sh" ]; then
+                  source "$(Pipeline.Workspace)/self/bs-params.sh"
+                  echo "✅ Sourced bs-params.sh from $(Pipeline.Workspace)/self"
+                elif [ -f "bs-params.sh" ]; then
+                  source "bs-params.sh"
+                  echo "✅ Sourced bs-params.sh from current directory"
+                else
+                  echo "⚠️ bs-params.sh not found!"
+                fi
 
                 cd $(TF_WORKING_DIR)
                 KV_NAME="${{ parameters.key_vault_name }}"
@@ -405,9 +425,19 @@ stages:
                 export ARM_CLIENT_SECRET=$servicePrincipalKey
                 export ARM_TENANT_ID=$tenantId
                 export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+                # ── Guard: Charger les variables Backstage si présentes ──
+                if [ -f "$(Pipeline.Workspace)/self/bs-params.sh" ]; then
+                  source "$(Pipeline.Workspace)/self/bs-params.sh"
+                  echo "✅ Sourced bs-params.sh from $(Pipeline.Workspace)/self"
+                elif [ -f "bs-params.sh" ]; then
+                  source "bs-params.sh"
+                  echo "✅ Sourced bs-params.sh from current directory"
+                else
+                  echo "⚠️ bs-params.sh not found!"
+                fi
 
                 # ── Guard: fallback si paramètres vides ─────────────────
-                RG_NAME="${{ parameters.resource_group_name }}"
+                RG_NAME="${BS_RESOURCE_GROUP_NAME:-${{ parameters.resource_group_name }}}"
                 KV_NAME="${{ parameters.key_vault_name }}"
                 [ -z "$RG_NAME" ] && RG_NAME="rg-monprojet-test"
                 [ -z "$KV_NAME" ] && KV_NAME="kv-monprojet-test"

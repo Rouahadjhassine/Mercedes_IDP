@@ -269,6 +269,16 @@ stages:
           export ARM_CLIENT_SECRET=$servicePrincipalKey
           export ARM_TENANT_ID=$tenantId
           export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+          # ── Guard: Charger les variables Backstage si présentes ──
+          if [ -f "$(Pipeline.Workspace)/self/bs-params.sh" ]; then
+            source "$(Pipeline.Workspace)/self/bs-params.sh"
+            echo "✅ Sourced bs-params.sh from $(Pipeline.Workspace)/self"
+          elif [ -f "bs-params.sh" ]; then
+            source "bs-params.sh"
+            echo "✅ Sourced bs-params.sh from current directory"
+          else
+            echo "⚠️ bs-params.sh not found!"
+          fi
 
           # ── Guard: variables injectées par Backstage ou paramètres ADO ──────────────────────────
           RG_NAME="${BS_RESOURCE_GROUP_NAME:-${{ parameters.resource_group_name }}}"
@@ -341,10 +351,20 @@ stages:
                 export ARM_CLIENT_SECRET=$servicePrincipalKey
                 export ARM_TENANT_ID=$tenantId
                 export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+                # ── Guard: Charger les variables Backstage si présentes ──
+                if [ -f "$(Pipeline.Workspace)/self/bs-params.sh" ]; then
+                  source "$(Pipeline.Workspace)/self/bs-params.sh"
+                  echo "✅ Sourced bs-params.sh from $(Pipeline.Workspace)/self"
+                elif [ -f "bs-params.sh" ]; then
+                  source "bs-params.sh"
+                  echo "✅ Sourced bs-params.sh from current directory"
+                else
+                  echo "⚠️ bs-params.sh not found!"
+                fi
 
-                RG_NAME="${{ parameters.resource_group_name }}"
-                LOCATION="${{ parameters.location }}"
-                ENVIRONMENT="${{ parameters.environment }}"
+                RG_NAME="${BS_RESOURCE_GROUP_NAME:-${{ parameters.resource_group_name }}}"
+                LOCATION="${BS_LOCATION:-${{ parameters.location }}}"
+                ENVIRONMENT="${BS_ENVIRONMENT:-${{ parameters.environment }}}"
 
                 [ -z "$RG_NAME" ]   && RG_NAME="rg-monprojet-test"
                 [ -z "$LOCATION" ]  && LOCATION="West Europe"
@@ -404,6 +424,16 @@ stages:
                 export ARM_CLIENT_SECRET=$servicePrincipalKey
                 export ARM_TENANT_ID=$tenantId
                 export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+                # ── Guard: Charger les variables Backstage si présentes ──
+                if [ -f "$(Pipeline.Workspace)/self/bs-params.sh" ]; then
+                  source "$(Pipeline.Workspace)/self/bs-params.sh"
+                  echo "✅ Sourced bs-params.sh from $(Pipeline.Workspace)/self"
+                elif [ -f "bs-params.sh" ]; then
+                  source "bs-params.sh"
+                  echo "✅ Sourced bs-params.sh from current directory"
+                else
+                  echo "⚠️ bs-params.sh not found!"
+                fi
 
                 # ── Guard: variables injectées par Backstage ou paramètres ADO ──────────────────────────
                 RG_NAME="${BS_RESOURCE_GROUP_NAME:-${{ parameters.resource_group_name }}}"

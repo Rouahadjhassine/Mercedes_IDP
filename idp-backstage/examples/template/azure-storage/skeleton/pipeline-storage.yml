@@ -203,7 +203,7 @@ stages:
         scriptType: "bash"
         scriptLocation: "inlineScript"
         inlineScript: |
-          RG_NAME="${{ parameters.resource_group_name }}"
+          RG_NAME="${BS_RESOURCE_GROUP_NAME:-${{ parameters.resource_group_name }}}"
           RG_EXISTS=$(az group exists --name "$RG_NAME")
 
           if [ "$RG_EXISTS" = "true" ]; then
@@ -272,9 +272,19 @@ stages:
           export ARM_CLIENT_SECRET=$servicePrincipalKey
           export ARM_TENANT_ID=$tenantId
           export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+          # ── Guard: Charger les variables Backstage si présentes ──
+          if [ -f "$(Pipeline.Workspace)/self/bs-params.sh" ]; then
+            source "$(Pipeline.Workspace)/self/bs-params.sh"
+            echo "✅ Sourced bs-params.sh from $(Pipeline.Workspace)/self"
+          elif [ -f "bs-params.sh" ]; then
+            source "bs-params.sh"
+            echo "✅ Sourced bs-params.sh from current directory"
+          else
+            echo "⚠️ bs-params.sh not found!"
+          fi
 
           # ── Guard: fallback si paramètres vides ─────────────────
-          RG_NAME="${{ parameters.resource_group_name }}"
+          RG_NAME="${BS_RESOURCE_GROUP_NAME:-${{ parameters.resource_group_name }}}"
           STORAGE_NAME="${{ parameters.storage_account_name }}"
           [ -z "$RG_NAME" ] && RG_NAME="rg-monprojet-test"
           [ -z "$STORAGE_NAME" ] && STORAGE_NAME="stmonprojettest"
@@ -335,6 +345,16 @@ stages:
                 export ARM_CLIENT_SECRET=$servicePrincipalKey
                 export ARM_TENANT_ID=$tenantId
                 export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+                # ── Guard: Charger les variables Backstage si présentes ──
+                if [ -f "$(Pipeline.Workspace)/self/bs-params.sh" ]; then
+                  source "$(Pipeline.Workspace)/self/bs-params.sh"
+                  echo "✅ Sourced bs-params.sh from $(Pipeline.Workspace)/self"
+                elif [ -f "bs-params.sh" ]; then
+                  source "bs-params.sh"
+                  echo "✅ Sourced bs-params.sh from current directory"
+                else
+                  echo "⚠️ bs-params.sh not found!"
+                fi
 
                 cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)
                 STORAGE_NAME="${{ parameters.storage_account_name }}"
@@ -393,9 +413,19 @@ stages:
                 export ARM_CLIENT_SECRET=$servicePrincipalKey
                 export ARM_TENANT_ID=$tenantId
                 export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+                # ── Guard: Charger les variables Backstage si présentes ──
+                if [ -f "$(Pipeline.Workspace)/self/bs-params.sh" ]; then
+                  source "$(Pipeline.Workspace)/self/bs-params.sh"
+                  echo "✅ Sourced bs-params.sh from $(Pipeline.Workspace)/self"
+                elif [ -f "bs-params.sh" ]; then
+                  source "bs-params.sh"
+                  echo "✅ Sourced bs-params.sh from current directory"
+                else
+                  echo "⚠️ bs-params.sh not found!"
+                fi
 
                 # ── Guard: fallback si paramètres vides ─────────────────
-                RG_NAME="${{ parameters.resource_group_name }}"
+                RG_NAME="${BS_RESOURCE_GROUP_NAME:-${{ parameters.resource_group_name }}}"
                 STORAGE_NAME="${{ parameters.storage_account_name }}"
                 [ -z "$RG_NAME" ] && RG_NAME="rg-monprojet-test"
                 [ -z "$STORAGE_NAME" ] && STORAGE_NAME="stmonprojettest"

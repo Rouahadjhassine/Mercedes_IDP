@@ -280,7 +280,15 @@ stages:
           export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
 
           # ── Source Backstage parameters si présents ─────────────────
-          [ -f bs-params.sh ] && source bs-params.sh
+          if [ -f "$(Pipeline.Workspace)/self/bs-params.sh" ]; then
+            source "$(Pipeline.Workspace)/self/bs-params.sh"
+            echo "✅ Sourced bs-params.sh from $(Pipeline.Workspace)/self"
+          elif [ -f "bs-params.sh" ]; then
+            source "bs-params.sh"
+            echo "✅ Sourced bs-params.sh from current directory"
+          else
+            echo "⚠️ bs-params.sh not found!"
+          fi
 
           # ── Guard: variables injectées par Backstage ou paramètres ADO ─────────────────
           LOCATION="${BS_LOCATION:-${{ parameters.location }}}"
@@ -357,7 +365,15 @@ stages:
                 export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
 
                 # ── Source Backstage parameters si présents ─────────────────
-                [ -f bs-params.sh ] && source bs-params.sh
+                if [ -f "$(Pipeline.Workspace)/self/bs-params.sh" ]; then
+                  source "$(Pipeline.Workspace)/self/bs-params.sh"
+                  echo "✅ Sourced bs-params.sh from $(Pipeline.Workspace)/self"
+                elif [ -f "bs-params.sh" ]; then
+                  source "bs-params.sh"
+                  echo "✅ Sourced bs-params.sh from current directory"
+                else
+                  echo "⚠️ bs-params.sh not found!"
+                fi
 
                 # ── Capture TOUTES les variables en shell ─────────────
                 LOCATION="${BS_LOCATION:-${{ parameters.location }}}"
@@ -475,7 +491,15 @@ stages:
                 export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
 
                 # ── Source Backstage parameters si présents ─────────────────
-                [ -f bs-params.sh ] && source bs-params.sh
+                if [ -f "$(Pipeline.Workspace)/self/bs-params.sh" ]; then
+                  source "$(Pipeline.Workspace)/self/bs-params.sh"
+                  echo "✅ Sourced bs-params.sh from $(Pipeline.Workspace)/self"
+                elif [ -f "bs-params.sh" ]; then
+                  source "bs-params.sh"
+                  echo "✅ Sourced bs-params.sh from current directory"
+                else
+                  echo "⚠️ bs-params.sh not found!"
+                fi
 
                 # ── Guard: fallback si vide ───────────────────
                 LOCATION="${BS_LOCATION:-${{ parameters.location }}}"

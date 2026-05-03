@@ -399,14 +399,16 @@ stages:
                 echo ""
                 echo "============================================"
                 echo "  ✅ Storage Account créé avec succès !"
-                echo "  📁 RG: ${{ parameters.resource_group_name }}"
-                echo "  🌍 Région: ${{ parameters.location }}"
-                echo "  📦 Kind: ${{ parameters.storage_kind }}"
-                echo "  💲 Tier: ${{ parameters.storage_account_tier }}"
-                echo "  🔁 Réplication: ${{ parameters.storage_replication_type }}"
-                echo "  🌡️  Access: ${{ parameters.storage_access_tier }}"
+                echo "  📁 RG:          ${BS_RESOURCE_GROUP_NAME}"
+                echo "  🌍 Région:      ${BS_LOCATION}"
+                echo "  📦 Kind:        ${BS_STORAGE_KIND}"
+                echo "  💲 Tier:        ${BS_STORAGE_ACCOUNT_TIER}"
+                echo "  🔁 Réplication: ${BS_STORAGE_REPLICATION_TYPE}"
+                echo "  🌡️  Access:      ${BS_STORAGE_ACCESS_TIER}"
                 echo "  📤 → Nom du Storage sauvegardé pour le Pipeline KeyVault"
                 echo "============================================"
+                echo ""
+                echo "── Outputs Terraform ──"
                 terraform output
 
 # ── STAGE 4 : DESTROY ───────────────────────────────────────

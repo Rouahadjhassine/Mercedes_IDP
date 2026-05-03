@@ -205,9 +205,11 @@ stages:
         inlineScript: |
           # ── Guard: Charger les variables Backstage si présentes ──
           if [ -f "$(Pipeline.Workspace)/self/bs-params.sh" ]; then
+            sed -i 's/\r$//' "$(Pipeline.Workspace)/self/bs-params.sh"
             source "$(Pipeline.Workspace)/self/bs-params.sh"
             echo "✅ Sourced bs-params.sh from $(Pipeline.Workspace)/self"
           elif [ -f "bs-params.sh" ]; then
+            sed -i 's/\r$//' bs-params.sh
             source "bs-params.sh"
             echo "✅ Sourced bs-params.sh from current directory"
           else
@@ -286,9 +288,11 @@ stages:
           export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
           # ── Guard: Charger les variables Backstage si présentes ──
           if [ -f "$(Pipeline.Workspace)/self/bs-params.sh" ]; then
+            sed -i 's/\r$//' "$(Pipeline.Workspace)/self/bs-params.sh"
             source "$(Pipeline.Workspace)/self/bs-params.sh"
             echo "✅ Sourced bs-params.sh from $(Pipeline.Workspace)/self"
           elif [ -f "bs-params.sh" ]; then
+            sed -i 's/\r$//' bs-params.sh
             source "bs-params.sh"
             echo "✅ Sourced bs-params.sh from current directory"
           else
@@ -359,9 +363,11 @@ stages:
                 export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
                 # ── Guard: Charger les variables Backstage si présentes ──
                 if [ -f "$(Pipeline.Workspace)/self/bs-params.sh" ]; then
+                  sed -i 's/\r$//' "$(Pipeline.Workspace)/self/bs-params.sh"
                   source "$(Pipeline.Workspace)/self/bs-params.sh"
                   echo "✅ Sourced bs-params.sh from $(Pipeline.Workspace)/self"
                 elif [ -f "bs-params.sh" ]; then
+                  sed -i 's/\r$//' bs-params.sh
                   source "bs-params.sh"
                   echo "✅ Sourced bs-params.sh from current directory"
                 else
@@ -427,9 +433,11 @@ stages:
                 export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
                 # ── Guard: Charger les variables Backstage si présentes ──
                 if [ -f "$(Pipeline.Workspace)/self/bs-params.sh" ]; then
+                  sed -i 's/\r$//' "$(Pipeline.Workspace)/self/bs-params.sh"
                   source "$(Pipeline.Workspace)/self/bs-params.sh"
                   echo "✅ Sourced bs-params.sh from $(Pipeline.Workspace)/self"
                 elif [ -f "bs-params.sh" ]; then
+                  sed -i 's/\r$//' bs-params.sh
                   source "bs-params.sh"
                   echo "✅ Sourced bs-params.sh from current directory"
                 else

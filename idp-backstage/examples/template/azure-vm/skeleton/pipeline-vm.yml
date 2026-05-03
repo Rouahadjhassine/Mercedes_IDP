@@ -202,7 +202,7 @@ stages:
     - checkout: self
 
     - task: AzureCLI@2
-      displayName: "✅ Vérifier que le RG '${{ parameters.rg_prefix }}-rg-${{ parameters.rg_environment }}' existe"
+      displayName: "✅ Vérifier Resource Group cible"
       inputs:
         azureSubscription: "MIC-IDP"
         scriptType: "bash"

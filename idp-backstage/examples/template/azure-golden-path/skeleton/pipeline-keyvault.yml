@@ -320,7 +320,7 @@ stages:
 - stage: Apply
   displayName: "3 🚀 Apply (créer Key Vault)"
   dependsOn: Plan
-  condition: and(succeeded(), eq('${{ parameters.action }}', 'apply'))
+  condition: and(succeeded(), ne('${{ parameters.action }}', 'plan'), ne('${{ parameters.action }}', 'destroy'))
   jobs:
   - deployment: Apply
     environment: "azure-pfe"

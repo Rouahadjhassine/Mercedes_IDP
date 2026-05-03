@@ -202,13 +202,25 @@ stages:
     - checkout: self
 
     - task: AzureCLI@2
-      displayName: "✅ Vérifier que le RG '${{ parameters.rg_prefix }}-rg-${{ parameters.rg_environment }}' existe"
+      displayName: "✅ Vérifier Resource Group cible"
       inputs:
         azureSubscription: "MIC-IDP"
         scriptType: "bash"
         scriptLocation: "inlineScript"
         inlineScript: |
+          # ── Guard: Charger les variables Backstage si présentes ──
+          if [ -f "$(Pipeline.Workspace)/self/bs-params.sh" ]; then
+            source "$(Pipeline.Workspace)/self/bs-params.sh"
+            echo "✅ Sourced bs-params.sh from $(Pipeline.Workspace)/self"
+          elif [ -f "bs-params.sh" ]; then
+            source "bs-params.sh"
+            echo "✅ Sourced bs-params.sh from current directory"
+          else
+            echo "⚠️ bs-params.sh not found – using pipeline parameters only"
+          fi
+
           RG_NAME="${BS_RESOURCE_GROUP_NAME:-${{ parameters.resource_group_name }}}"
+          [ -z "$RG_NAME" ] && { echo "❌ ERREUR: resource_group_name est vide !"; exit 1; }
           RG_EXISTS=$(az group exists --name "$RG_NAME")
 
           if [ "$RG_EXISTS" = "true" ]; then

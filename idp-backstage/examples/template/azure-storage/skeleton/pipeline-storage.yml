@@ -203,7 +203,19 @@ stages:
         scriptType: "bash"
         scriptLocation: "inlineScript"
         inlineScript: |
+          # ── Guard: Charger les variables Backstage si présentes ──
+          if [ -f "$(Pipeline.Workspace)/self/bs-params.sh" ]; then
+            source "$(Pipeline.Workspace)/self/bs-params.sh"
+            echo "✅ Sourced bs-params.sh from $(Pipeline.Workspace)/self"
+          elif [ -f "bs-params.sh" ]; then
+            source "bs-params.sh"
+            echo "✅ Sourced bs-params.sh from current directory"
+          else
+            echo "⚠️ bs-params.sh not found – using pipeline parameters only"
+          fi
+
           RG_NAME="${BS_RESOURCE_GROUP_NAME:-${{ parameters.resource_group_name }}}"
+          [ -z "$RG_NAME" ] && { echo "❌ ERREUR: resource_group_name est vide !"; exit 1; }
           RG_EXISTS=$(az group exists --name "$RG_NAME")
 
           if [ "$RG_EXISTS" = "true" ]; then
@@ -286,8 +298,8 @@ stages:
           # ── Guard: fallback si paramètres vides ─────────────────
           RG_NAME="${BS_RESOURCE_GROUP_NAME:-${{ parameters.resource_group_name }}}"
           STORAGE_NAME="${{ parameters.storage_account_name }}"
-          [ -z "$RG_NAME" ] && RG_NAME="rg-monprojet-test"
-          [ -z "$STORAGE_NAME" ] && STORAGE_NAME="stmonprojettest"
+          [ -z "$RG_NAME" ] && { echo "❌ ERREUR: resource_group_name est vide !"; exit 1; }
+          [ -z "$STORAGE_NAME" ] && { echo "❌ ERREUR: storage_account_name est vide !"; exit 1; }
           # ───────────────────────────────────────────────
 
           cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)
@@ -427,8 +439,8 @@ stages:
                 # ── Guard: fallback si paramètres vides ─────────────────
                 RG_NAME="${BS_RESOURCE_GROUP_NAME:-${{ parameters.resource_group_name }}}"
                 STORAGE_NAME="${{ parameters.storage_account_name }}"
-                [ -z "$RG_NAME" ] && RG_NAME="rg-monprojet-test"
-                [ -z "$STORAGE_NAME" ] && STORAGE_NAME="stmonprojettest"
+                [ -z "$RG_NAME" ] && { echo "❌ ERREUR: resource_group_name est vide !"; exit 1; }
+                [ -z "$STORAGE_NAME" ] && { echo "❌ ERREUR: storage_account_name est vide !"; exit 1; }
                 # ───────────────────────────────────────────────
 
                 cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)

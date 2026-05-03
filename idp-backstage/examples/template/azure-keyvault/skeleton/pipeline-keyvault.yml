@@ -207,14 +207,26 @@ stages:
         scriptType: "bash"
         scriptLocation: "inlineScript"
         inlineScript: |
+          # ── Guard: Charger les variables Backstage si présentes ──
+          if [ -f "$(Pipeline.Workspace)/self/bs-params.sh" ]; then
+            source "$(Pipeline.Workspace)/self/bs-params.sh"
+            echo "✅ Sourced bs-params.sh from $(Pipeline.Workspace)/self"
+          elif [ -f "bs-params.sh" ]; then
+            source "bs-params.sh"
+            echo "✅ Sourced bs-params.sh from current directory"
+          else
+            echo "⚠️ bs-params.sh not found – using pipeline parameters only"
+          fi
+
           RG_NAME="${BS_RESOURCE_GROUP_NAME:-${{ parameters.resource_group_name }}}"
+          [ -z "$RG_NAME" ] && { echo "❌ ERREUR: resource_group_name est vide !"; exit 1; }
 
           # Vérifier Resource Group (obligatoire)
           RG_EXISTS=$(az group exists --name "$RG_NAME")
           if [ "$RG_EXISTS" = "true" ]; then
             echo "✅ Resource Group '$RG_NAME' trouvé."
           else
-            echo "❌ ERREUR: Resource Group introuvable. Lancez d'abord Pipeline #1."
+            echo "❌ ERREUR: Resource Group '$RG_NAME' introuvable. Lancez d'abord Pipeline #1."
             exit 1
           fi
 
@@ -292,8 +304,8 @@ stages:
           # ── Guard: fallback si paramètres vides ─────────────────
           RG_NAME="${BS_RESOURCE_GROUP_NAME:-${{ parameters.resource_group_name }}}"
           KV_NAME="${{ parameters.key_vault_name }}"
-          [ -z "$RG_NAME" ] && RG_NAME="rg-monprojet-test"
-          [ -z "$KV_NAME" ] && KV_NAME="kv-monprojet-test"
+          [ -z "$RG_NAME" ] && { echo "❌ ERREUR: resource_group_name est vide !"; exit 1; }
+          [ -z "$KV_NAME" ] && { echo "❌ ERREUR: key_vault_name est vide !"; exit 1; }
           # ───────────────────────────────────────────────
 
           cd $(TF_WORKING_DIR)
@@ -439,8 +451,8 @@ stages:
                 # ── Guard: fallback si paramètres vides ─────────────────
                 RG_NAME="${BS_RESOURCE_GROUP_NAME:-${{ parameters.resource_group_name }}}"
                 KV_NAME="${{ parameters.key_vault_name }}"
-                [ -z "$RG_NAME" ] && RG_NAME="rg-monprojet-test"
-                [ -z "$KV_NAME" ] && KV_NAME="kv-monprojet-test"
+                [ -z "$RG_NAME" ] && { echo "❌ ERREUR: resource_group_name est vide !"; exit 1; }
+                [ -z "$KV_NAME" ] && { echo "❌ ERREUR: key_vault_name est vide !"; exit 1; }
                 # ───────────────────────────────────────────────
 
                 cd $(TF_WORKING_DIR)

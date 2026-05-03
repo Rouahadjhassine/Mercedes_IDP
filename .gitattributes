@@ -1,0 +1,41 @@
+# ============================================================
+# .gitattributes – Enforce LF line endings on all text files
+# Prevents CRLF issues when committing from Windows machines
+# ============================================================
+
+# Default: normalize all text files to LF on checkout
+* text=auto eol=lf
+
+# Terraform files – always LF
+*.tf        text eol=lf
+*.tfvars    text eol=lf
+*.hcl       text eol=lf
+
+# Shell scripts – always LF (critical: CRLF breaks bash sourcing)
+*.sh        text eol=lf
+
+# YAML / pipeline files – always LF
+*.yml       text eol=lf
+*.yaml      text eol=lf
+
+# JSON / Markdown
+*.json      text eol=lf
+*.md        text eol=lf
+
+# TypeScript / JavaScript (Backstage)
+*.ts        text eol=lf
+*.tsx       text eol=lf
+*.js        text eol=lf
+*.jsx       text eol=lf
+*.css       text eol=lf
+*.html      text eol=lf
+
+# Binary files – no line ending conversion
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.gif       binary
+*.ico       binary
+*.zip       binary
+*.gz        binary
+*.tar       binary

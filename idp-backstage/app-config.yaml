@@ -10,6 +10,7 @@ app:
     - page:catalog:
         config:
           path: /
+          initiallySelectedFilter: all
 
 organization:
   name: My Company

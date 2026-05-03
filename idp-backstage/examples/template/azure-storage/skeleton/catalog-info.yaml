@@ -2,7 +2,7 @@ apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
   name: ${{ values.component_id }}
-  title: "💾 Storage – dans ${{ values.resource_group_name }}"
+  title: "💾 ${{ values.storage_account_name }}"
   description: ${{ values.description | dump }}
   annotations:
     dev.azure.com/project: "${{ values.ado_project }}"
@@ -21,3 +21,5 @@ spec:
   type: azure-storage-account
   lifecycle: experimental
   owner: ${{ values.owner }}
+  dependsOn:
+    - "component:default/${{ values.resource_group_name }}"

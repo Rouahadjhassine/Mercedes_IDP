@@ -2,7 +2,7 @@ apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
   name: ${{ values.component_id }}
-  title: "🔐 Key Vault – dans ${{ values.resource_group_name }}"
+  title: "🔐 ${{ values.keyvault_name }}"
   description: ${{ values.description | dump }}
   annotations:
     dev.azure.com/project: "${{ values.ado_project }}"
@@ -22,6 +22,7 @@ spec:
   lifecycle: experimental
   owner: ${{ values.owner }}
   dependsOn:
+    - "component:default/${{ values.resource_group_name }}"
     {% if values.link_storage and values.existing_storage %}
     - "${{ values.existing_storage }}"
     {% endif %}

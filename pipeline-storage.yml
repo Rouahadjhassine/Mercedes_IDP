@@ -307,6 +307,9 @@ stages:
             -backend-config="container_name=tfstate" \
             -backend-config="key=storage-${STORAGE_NAME}.tfstate"
 
+          RETENTION_DAYS="${{ parameters.storage_retention_days }}"
+          [ -z "$RETENTION_DAYS" ] && RETENTION_DAYS=7
+
           terraform plan \
             -var="subscription_id=$(SUBSCRIPTION_ID)" \
             -var="resource_group_name=$RG_NAME" \
@@ -315,7 +318,7 @@ stages:
             -var="storage_replication_type=${{ parameters.storage_replication_type }}" \
             -var="storage_access_tier=${{ parameters.storage_access_tier }}" \
             -var="storage_kind=${{ parameters.storage_kind }}" \
-            -var="storage_retention_days=${{ parameters.storage_retention_days }}" \
+            -var="storage_retention_days=$RETENTION_DAYS" \
             -out=$(Build.ArtifactStagingDirectory)/tfplan
 
     - publish: $(Build.ArtifactStagingDirectory)/tfplan

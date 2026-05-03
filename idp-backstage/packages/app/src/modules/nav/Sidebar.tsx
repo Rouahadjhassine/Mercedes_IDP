@@ -13,7 +13,10 @@ import SearchIcon from '@material-ui/icons/Search';
 import { SidebarSearchModal } from '@backstage/plugin-search';
 import { UserSettingsSignInAvatar } from '@backstage/plugin-user-settings';
 import { NotificationsSidebarItem } from '@backstage/plugin-notifications';
-
+import CloudIcon from '@material-ui/icons/Cloud';
+import StorageIcon from '@material-ui/icons/Storage';
+import VpnKeyIcon from '@material-ui/icons/VpnKey';
+import ComputerIcon from '@material-ui/icons/Computer';
 export const SidebarContent = NavContentBlueprint.make({
   params: {
     component: ({ navItems }) => {
@@ -34,6 +37,15 @@ export const SidebarContent = NavContentBlueprint.make({
           <SidebarGroup label="Menu" icon={<MenuIcon />}>
             {nav.take('page:catalog')}
             {nav.take('page:scaffolder')}
+            <SidebarDivider />
+            
+            <SidebarGroup label="Azure Infrastructure" icon={<CloudIcon />}>
+              <SidebarItem icon={CloudIcon} to="/catalog?filters[kind]=Component&filters[type]=azure-resource-group" text="Resource Groups" />
+              <SidebarItem icon={StorageIcon} to="/catalog?filters[kind]=Component&filters[type]=azure-storage-account" text="Storage Accounts" />
+              <SidebarItem icon={VpnKeyIcon} to="/catalog?filters[kind]=Component&filters[type]=azure-key-vault" text="Key Vaults" />
+              <SidebarItem icon={ComputerIcon} to="/catalog?filters[kind]=Component&filters[type]=azure-virtual-machine" text="Virtual Machines" />
+            </SidebarGroup>
+            
             <SidebarDivider />
             <SidebarScrollWrapper>
               {nav.rest({ sortBy: 'title' })}

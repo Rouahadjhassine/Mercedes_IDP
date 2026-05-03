@@ -51,7 +51,14 @@ spec:
         resource_group_name:
           title: "📁 Nom du Resource Group"
           type: string
-          description: "Le nom exact du Resource Group (ex: testfinal)"
+          description: "Sélectionnez le Resource Group"
+          ui:field: EntityPicker
+          ui:options:
+            catalogFilter:
+              - kind: Component
+                spec.type: azure-resource-group
+            defaultKind: Component
+            defaultNamespace: default
         environment:
           title: "🌐 Environnement"
           type: string
@@ -256,7 +263,7 @@ spec:
           component_id: ${{ parameters.key_vault_name }}
           description: ${{ parameters.description }}
           owner: ${{ parameters.owner }}
-          resource_group_name: ${{ parameters.resource_group_name }}
+          resource_group_name: ${{ parameters.resource_group_name | parseEntityRef | pick('name') }}
           key_vault_name: ${{ parameters.key_vault_name }}
           link_storage: ${{ parameters.link_storage }}
           existing_storage: ${{ parameters.existing_storage }}
@@ -283,7 +290,7 @@ spec:
       action: publish:azure
       input:
         repoUrl: "dev.azure.com?organization=${{ parameters.ado_org }}&project=${{ parameters.ado_project }}&repo=${{ parameters.repo_name }}"
-        description: "🔐 Key Vault – dans ${{ parameters.resource_group_name }}"
+        description: "🔐 Key Vault – dans ${{ parameters.resource_group_name | parseEntityRef | pick('name') }}"
         defaultBranch: main
 
     - id: register
@@ -304,7 +311,7 @@ spec:
         yamlPath: pipeline-keyvault.yml
         templateParameters:
           action: apply
-          resource_group_name: ${{ parameters.resource_group_name }}
+          resource_group_name: ${{ parameters.resource_group_name | parseEntityRef | pick('name') }}
           key_vault_name: ${{ parameters.key_vault_name }}
           location: ${{ parameters.location }}
           keyvault_sku: ${{ parameters.keyvault_sku }}

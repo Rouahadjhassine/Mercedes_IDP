@@ -1,6 +1,6 @@
 
 ---
-# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-user
+# Utilisateur invité (défaut)
 apiVersion: backstage.io/v1alpha1
 kind: User
 metadata:
@@ -8,22 +8,73 @@ metadata:
 spec:
   memberOf: [guests]
 ---
-# >>> ACTION REQUIRED: Replace this email with your actual Microsoft sign-in email <<<
+# Utilisateur principal (vous)
 apiVersion: backstage.io/v1alpha1
 kind: User
 metadata:
-  name: developers
+  name: roua
 spec:
   profile:
-    displayName: Developer User
+    displayName: Roua Hadj Hassine
     email: roua@xfunctions.onmicrosoft.com
-  memberOf: [guests]
+  memberOf: [mic-idp, guests]
 ---
-# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-group
+# ── GROUPES / ÉQUIPES ─────────────────────────────────────────
 apiVersion: backstage.io/v1alpha1
 kind: Group
 metadata:
   name: guests
+  title: "Guests"
+spec:
+  type: team
+  children: []
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: mic-idp
+  title: "MIC-IDP (Platform Team)"
+  description: "Équipe plateforme IDP — développement et maintenance de l'IDP"
+spec:
+  type: team
+  children: []
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: mic-secops
+  title: "MIC-SECOPS (Security Ops)"
+  description: "Équipe opérations de sécurité — gestion des secrets et des accès"
+spec:
+  type: team
+  children: []
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: ntt-data
+  title: "NTT-DATA"
+  description: "Équipe NTT DATA — partenaire infrastructure"
+spec:
+  type: team
+  children: []
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: platform-team
+  title: "Platform-Team"
+  description: "Équipe plateforme — déploiement et monitoring"
+spec:
+  type: team
+  children: []
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: devops-team
+  title: "DevOps-Team"
+  description: "Équipe DevOps — CI/CD et automatisation"
 spec:
   type: team
   children: []

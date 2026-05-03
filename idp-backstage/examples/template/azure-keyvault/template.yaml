@@ -151,14 +151,14 @@ spec:
             - "Premium — + HSM (Hardware Security Module)"
         keyvault_retention_days:
           title: "🗓️ Soft Delete retention (jours)"
-          type: number
-          default: 7
+          type: string
+          default: "7"
           enum:
-            - 7
-            - 14
-            - 30
-            - 60
-            - 90
+            - "7"
+            - "14"
+            - "30"
+            - "60"
+            - "90"
 
     # ── STEP 5 : ACCESS CONFIGURATION ────────────────────────
     - title: "🔒 Access Configuration"

@@ -182,16 +182,16 @@ spec:
             - "Archive — Archivage long terme (180 jours minimum)"
         storage_retention_days:
           title: "🗓️ Rétention soft delete (jours)"
-          type: number
-          default: 7
+          type: string
+          default: "7"
           enum:
-            - 7
-            - 14
-            - 30
-            - 60
-            - 90
-            - 180
-            - 365
+            - "7"
+            - "14"
+            - "30"
+            - "60"
+            - "90"
+            - "180"
+            - "365"
 
     # ── STEP 6 : TAGS ─────────────────────────────────────────
     - title: "🏷️ Tags Azure"

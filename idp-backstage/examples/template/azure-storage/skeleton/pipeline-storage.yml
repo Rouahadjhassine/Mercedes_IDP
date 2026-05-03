@@ -301,7 +301,7 @@ stages:
 
           # ── Guard: fallback si paramètres vides ─────────────────
           RG_NAME="${BS_RESOURCE_GROUP_NAME:-${{ parameters.resource_group_name }}}"
-          STORAGE_NAME="${{ parameters.storage_account_name }}"
+          STORAGE_NAME="${BS_STORAGE_ACCOUNT_NAME:-${{ parameters.storage_account_name }}}"
           [ -z "$RG_NAME" ] && { echo "❌ ERREUR: resource_group_name est vide !"; exit 1; }
           [ -z "$STORAGE_NAME" ] && { echo "❌ ERREUR: storage_account_name est vide !"; exit 1; }
           # ───────────────────────────────────────────────
@@ -375,7 +375,7 @@ stages:
                 fi
 
                 cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)
-                STORAGE_NAME="${{ parameters.storage_account_name }}"
+                STORAGE_NAME="${BS_STORAGE_ACCOUNT_NAME:-${{ parameters.storage_account_name }}}"
                 terraform init \
                   -backend-config="resource_group_name=rg-terraform-state" \
                   -backend-config="storage_account_name=pfetfstate" \
@@ -446,7 +446,7 @@ stages:
 
                 # ── Guard: fallback si paramètres vides ─────────────────
                 RG_NAME="${BS_RESOURCE_GROUP_NAME:-${{ parameters.resource_group_name }}}"
-                STORAGE_NAME="${{ parameters.storage_account_name }}"
+                STORAGE_NAME="${BS_STORAGE_ACCOUNT_NAME:-${{ parameters.storage_account_name }}}"
                 [ -z "$RG_NAME" ] && { echo "❌ ERREUR: resource_group_name est vide !"; exit 1; }
                 [ -z "$STORAGE_NAME" ] && { echo "❌ ERREUR: storage_account_name est vide !"; exit 1; }
                 # ───────────────────────────────────────────────

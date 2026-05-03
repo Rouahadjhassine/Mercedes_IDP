@@ -1,6 +1,6 @@
 output "resource_group_name" {
   description = "Resource Group utilisé par le Key Vault"
-  value       = data.terraform_remote_state.rg.outputs.resource_group_name
+  value       = data.azurerm_resource_group.rg.name
 }
 
 output "key_vault_name" {

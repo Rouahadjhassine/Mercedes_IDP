@@ -1,6 +1,6 @@
 output "resource_group_name" {
   description = "Resource Group utilisé par le Storage"
-  value       = data.terraform_remote_state.rg.outputs.resource_group_name
+  value       = data.azurerm_resource_group.rg.name
 }
 
 output "storage_account_name" {

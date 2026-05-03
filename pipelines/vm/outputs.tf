@@ -1,6 +1,6 @@
 output "resource_group_name" {
   description = "Resource Group utilisé par la VM"
-  value       = data.terraform_remote_state.rg.outputs.resource_group_name
+  value       = data.azurerm_resource_group.rg.name
 }
 
 output "vm_names" {

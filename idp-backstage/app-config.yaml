@@ -29,7 +29,8 @@ backend:
 
   database:
     client: better-sqlite3
-    connection: 'backstage.sqlite'
+    connection:
+      directory: './db'
 
 
 

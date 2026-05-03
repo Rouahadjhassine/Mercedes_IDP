@@ -313,17 +313,26 @@ stages:
             -backend-config="container_name=tfstate" \
             -backend-config="key=storage-${STORAGE_NAME}.tfstate"
 
-          RETENTION_DAYS="${{ parameters.storage_retention_days }}"
+          # ── Guard: résolution de tous les paramètres storage ──
+          STORAGE_KIND="${BS_STORAGE_KIND:-${{ parameters.storage_kind }}}"
+          [ -z "$STORAGE_KIND" ] && STORAGE_KIND="StorageV2"
+          STORAGE_ACCOUNT_TIER="${BS_STORAGE_ACCOUNT_TIER:-${{ parameters.storage_account_tier }}}"
+          [ -z "$STORAGE_ACCOUNT_TIER" ] && STORAGE_ACCOUNT_TIER="Standard"
+          STORAGE_REPLICATION="${BS_STORAGE_REPLICATION_TYPE:-${{ parameters.storage_replication_type }}}"
+          [ -z "$STORAGE_REPLICATION" ] && STORAGE_REPLICATION="LRS"
+          STORAGE_ACCESS="${BS_STORAGE_ACCESS_TIER:-${{ parameters.storage_access_tier }}}"
+          [ -z "$STORAGE_ACCESS" ] && STORAGE_ACCESS="Hot"
+          RETENTION_DAYS="${BS_STORAGE_RETENTION_DAYS:-${{ parameters.storage_retention_days }}}"
           [ -z "$RETENTION_DAYS" ] && RETENTION_DAYS=7
 
           terraform plan \
             -var="subscription_id=$(SUBSCRIPTION_ID)" \
             -var="resource_group_name=$RG_NAME" \
             -var="storage_account_name=$STORAGE_NAME" \
-            -var="storage_account_tier=${{ parameters.storage_account_tier }}" \
-            -var="storage_replication_type=${{ parameters.storage_replication_type }}" \
-            -var="storage_access_tier=${{ parameters.storage_access_tier }}" \
-            -var="storage_kind=${{ parameters.storage_kind }}" \
+            -var="storage_account_tier=$STORAGE_ACCOUNT_TIER" \
+            -var="storage_replication_type=$STORAGE_REPLICATION" \
+            -var="storage_access_tier=$STORAGE_ACCESS" \
+            -var="storage_kind=$STORAGE_KIND" \
             -var="storage_retention_days=$RETENTION_DAYS" \
             -out=$(Build.ArtifactStagingDirectory)/tfplan
 

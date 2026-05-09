@@ -316,12 +316,12 @@ spec:
           location: ${{ parameters.location }}
           keyvault_sku: ${{ parameters.keyvault_sku }}
           keyvault_retention_days: ${{ parameters.keyvault_retention_days }}
-          keyvault_purge_protection: ${{ parameters.keyvault_purge_protection }}
-          keyvault_disk_encryption: ${{ parameters.keyvault_disk_encryption }}
-          keyvault_deployment: ${{ parameters.keyvault_deployment }}
-          link_storage: ${{ parameters.link_storage }}
+          keyvault_purge_protection: "${{ parameters.keyvault_purge_protection }}"
+          keyvault_disk_encryption: "${{ parameters.keyvault_disk_encryption }}"
+          keyvault_deployment: "${{ parameters.keyvault_deployment }}"
+          link_storage: "${{ parameters.link_storage }}"
           link_storage_account_name: ${{ parameters.link_storage_account_name }}
-          store_vm_password: ${{ parameters.store_vm_password }}
+          store_vm_password: "${{ parameters.store_vm_password }}"
           tag_owner: ${{ parameters.tag_owner }}
           tag_project: ${{ parameters.tag_project }}
           tag_criticality: ${{ parameters.tag_criticality }}

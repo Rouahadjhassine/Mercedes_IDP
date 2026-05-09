@@ -40,8 +40,11 @@ parameters:
 
   - name: link_storage
     displayName: "🔗 [Storage] Lier au Storage Account existant ?"
-    type: boolean
-    default: true
+    type: string
+    default: "true"
+    values:
+      - "true"
+      - "false"
 
   - name: link_storage_account_name
     displayName: "🔗 [Storage] Nom du Storage Account lié (optionnel)"
@@ -111,18 +114,27 @@ parameters:
 
   - name: keyvault_purge_protection
     displayName: "🔒 [Access] Purge Protection (recommandé prod)"
-    type: boolean
-    default: false
+    type: string
+    default: "false"
+    values:
+      - "true"
+      - "false"
 
   - name: keyvault_disk_encryption
     displayName: "💿 [Access] Autoriser Azure Disk Encryption"
-    type: boolean
-    default: true
+    type: string
+    default: "true"
+    values:
+      - "true"
+      - "false"
 
   - name: keyvault_deployment
     displayName: "🚀 [Access] Autoriser Azure Deployment (VMs)"
-    type: boolean
-    default: true
+    type: string
+    default: "true"
+    values:
+      - "true"
+      - "false"
 
   # ═══════════════════════════════════════════════════════════
   # SECTION 5 – SECRETS À STOCKER AUTOMATIQUEMENT
@@ -130,8 +142,11 @@ parameters:
 
   - name: store_vm_password
     displayName: "🔑 [Secrets] Stocker le mot de passe VM admin"
-    type: boolean
-    default: true
+    type: string
+    default: "true"
+    values:
+      - "true"
+      - "false"
 
   # ═══════════════════════════════════════════════════════════
   # SECTION 6 – TAGS
@@ -233,7 +248,7 @@ stages:
           fi
 
           # Le Storage est maintenant vérifié lors du plan Terraform (s'il est passé en option)
-          if [ "${{ parameters.link_storage }}" = "True" ]; then
+          if [ "${{ parameters.link_storage }}" = "true" ]; then
             echo "ℹ️  La liaison Storage est activée. Terraform tentera d'utiliser '${{ parameters.link_storage_account_name }}'."
           fi
 
@@ -323,13 +338,13 @@ stages:
             -var="subscription_id=$(SUBSCRIPTION_ID)" \
             -var="resource_group_name=$RG_NAME" \
             -var="key_vault_name=$KV_NAME" \
-            -var="linked_storage_account_name=$([ '${{ parameters.link_storage }}' = 'True' ] && echo '${{ parameters.link_storage_account_name }}' || echo '')" \
+            -var="linked_storage_account_name=$([ '${{ parameters.link_storage }}' = 'true' ] && echo '${{ parameters.link_storage_account_name }}' || echo '')" \
             -var="keyvault_sku=${{ parameters.keyvault_sku }}" \
-            -var="keyvault_purge_protection=$([ '${{ parameters.keyvault_purge_protection }}' = 'True' ] && echo true || echo false)" \
-            -var="keyvault_disk_encryption=$([ '${{ parameters.keyvault_disk_encryption }}' = 'True' ] && echo true || echo false)" \
-            -var="keyvault_deployment=$([ '${{ parameters.keyvault_deployment }}' = 'True' ] && echo true || echo false)" \
+            -var="keyvault_purge_protection=$([ '${{ parameters.keyvault_purge_protection }}' = 'true' ] && echo true || echo false)" \
+            -var="keyvault_disk_encryption=$([ '${{ parameters.keyvault_disk_encryption }}' = 'true' ] && echo true || echo false)" \
+            -var="keyvault_deployment=$([ '${{ parameters.keyvault_deployment }}' = 'true' ] && echo true || echo false)" \
             -var="keyvault_retention_days=${{ parameters.keyvault_retention_days }}" \
-            -var="vm_admin_password=$([ '${{ parameters.store_vm_password }}' = 'True' ] && echo $VM_ADMIN_PASSWORD || echo '')" \
+            -var="vm_admin_password=$([ '${{ parameters.store_vm_password }}' = 'true' ] && echo $VM_ADMIN_PASSWORD || echo '')" \
             -out=$(Build.ArtifactStagingDirectory)/tfplan
 
     - publish: $(Build.ArtifactStagingDirectory)/tfplan
@@ -400,10 +415,10 @@ stages:
                 echo "  💎 SKU: ${{ parameters.keyvault_sku }}"
                 echo "  🔒 Purge protection: ${{ parameters.keyvault_purge_protection }}"
                 echo "  🔑 Secrets stockés:"
-                if [ "${{ parameters.store_vm_password }}" = "True" ]; then
+                if [ "${{ parameters.store_vm_password }}" = "true" ]; then
                   echo "     - vm-admin-password"
                 fi
-                if [ "${{ parameters.link_storage }}" = "True" ]; then
+                if [ "${{ parameters.link_storage }}" = "true" ]; then
                   echo "     - storage-account-name (lié au storage ${_link_storage_account})"
                 fi
                 echo "============================================"
@@ -473,10 +488,10 @@ stages:
                   -var="subscription_id=$(SUBSCRIPTION_ID)" \
                   -var="resource_group_name=$RG_NAME" \
                   -var="key_vault_name=$KV_NAME" \
-                  -var="linked_storage_account_name=$([ '${{ parameters.link_storage }}' = 'True' ] && echo '${{ parameters.link_storage_account_name }}' || echo '')" \
+                  -var="linked_storage_account_name=$([ '${{ parameters.link_storage }}' = 'true' ] && echo '${{ parameters.link_storage_account_name }}' || echo '')" \
                   -var="keyvault_sku=${{ parameters.keyvault_sku }}" \
-                  -var="keyvault_purge_protection=$([ '${{ parameters.keyvault_purge_protection }}' = 'True' ] && echo true || echo false)" \
-                  -var="keyvault_disk_encryption=$([ '${{ parameters.keyvault_disk_encryption }}' = 'True' ] && echo true || echo false)" \
-                  -var="keyvault_deployment=$([ '${{ parameters.keyvault_deployment }}' = 'True' ] && echo true || echo false)" \
+                  -var="keyvault_purge_protection=$([ '${{ parameters.keyvault_purge_protection }}' = 'true' ] && echo true || echo false)" \
+                  -var="keyvault_disk_encryption=$([ '${{ parameters.keyvault_disk_encryption }}' = 'true' ] && echo true || echo false)" \
+                  -var="keyvault_deployment=$([ '${{ parameters.keyvault_deployment }}' = 'true' ] && echo true || echo false)" \
                   -var="keyvault_retention_days=${{ parameters.keyvault_retention_days }}" \
                   -var="vm_admin_password=$(VM_ADMIN_PASSWORD)"

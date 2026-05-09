@@ -322,7 +322,7 @@ spec:
           resource_group_name: ${{ parameters.resource_group_name | parseEntityRef | pick('name') }}
           vm_name: ${{ parameters.vm_name }}
           location: ${{ parameters.location }}
-          vm_count: ${{ parameters.vm_count }}
+          vm_count: "${{ parameters.vm_count }}"
           vm_os_type: ${{ parameters.vm_os_type }}
           vm_os_image: ${{ parameters.vm_os_image }}
           vm_size: ${{ parameters.vm_size }}

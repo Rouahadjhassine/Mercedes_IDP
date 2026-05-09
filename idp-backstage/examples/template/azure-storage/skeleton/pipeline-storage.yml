@@ -354,6 +354,9 @@ stages:
         deploy:
           steps:
           - checkout: self
+            path: self
+          - checkout: git://IDP-MIC/IDP-MIC
+            path: IDP-MIC
 
           - script: |
               wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
@@ -426,6 +429,9 @@ stages:
         deploy:
           steps:
           - checkout: self
+            path: self
+          - checkout: git://IDP-MIC/IDP-MIC
+            path: IDP-MIC
 
           - script: |
               wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip

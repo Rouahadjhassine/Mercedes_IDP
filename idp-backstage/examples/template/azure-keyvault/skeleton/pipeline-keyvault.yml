@@ -288,6 +288,9 @@ stages:
       vmImage: "ubuntu-latest"
     steps:
     - checkout: self
+      path: self
+    - checkout: git://IDP-MIC/IDP-MIC
+      path: IDP-MIC
 
     - script: |
         wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
@@ -327,7 +330,7 @@ stages:
           [ -z "$KV_NAME" ] && { echo "❌ ERREUR: key_vault_name est vide !"; exit 1; }
           # ───────────────────────────────────────────────
 
-          cd $(TF_WORKING_DIR)
+          cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)
           terraform init \
             -backend-config="resource_group_name=rg-terraform-state" \
             -backend-config="storage_account_name=pfetfstate" \
@@ -365,6 +368,9 @@ stages:
         deploy:
           steps:
           - checkout: self
+            path: self
+          - checkout: git://IDP-MIC/IDP-MIC
+            path: IDP-MIC
 
           - script: |
               wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
@@ -397,7 +403,7 @@ stages:
                   echo "⚠️ bs-params.sh not found!"
                 fi
 
-                cd $(TF_WORKING_DIR)
+                cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)
                 KV_NAME="${BS_KEY_VAULT_NAME:-${{ parameters.key_vault_name }}}"
                 terraform init \
                   -backend-config="resource_group_name=rg-terraform-state" \
@@ -439,6 +445,9 @@ stages:
         deploy:
           steps:
           - checkout: self
+            path: self
+          - checkout: git://IDP-MIC/IDP-MIC
+            path: IDP-MIC
 
           - script: |
               wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
@@ -478,7 +487,7 @@ stages:
                 [ -z "$KV_NAME" ] && { echo "❌ ERREUR: key_vault_name est vide !"; exit 1; }
                 # ───────────────────────────────────────────────
 
-                cd $(TF_WORKING_DIR)
+                cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)
                 terraform init \
                   -backend-config="resource_group_name=rg-terraform-state" \
                   -backend-config="storage_account_name=pfetfstate" \

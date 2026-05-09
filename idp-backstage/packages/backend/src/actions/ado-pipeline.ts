@@ -19,7 +19,7 @@ export const adoPipelineModule = createBackendModule({
                 repo: z.string(),
                 pipelineName: z.string(),
                 yamlPath: z.string(),
-                templateParameters: z.record(z.string()).optional(),
+                templateParameters: z.record(z.unknown()).optional(),
               }),
               output: (z) => z.object({
                 pipelineRunUrl: z.string(),
@@ -96,7 +96,14 @@ export const adoPipelineModule = createBackendModule({
               // Without this delay, templateParameters are silently ignored (empty).
               await new Promise(resolve => setTimeout(resolve, 8000));
 
-              // 3. Run Pipeline
+              // 3. Coerce all templateParameters values to strings (ADO requires string values).
+              // Backstage may pass booleans or numbers from YAML fields — convert them all.
+              const stringParams: Record<string, string> = {};
+              for (const [key, value] of Object.entries(templateParameters || {})) {
+                stringParams[key] = String(value);
+              }
+
+              // 4. Run Pipeline
               const runResp = await fetch(`${baseUrl}/${pipelineId}/runs?api-version=7.1-preview.1`, {
                 method: 'POST',
                 headers: { Authorization: authHeader, 'Content-Type': 'application/json' },
@@ -109,7 +116,7 @@ export const adoPipelineModule = createBackendModule({
                       }
                     }
                   },
-                  templateParameters: templateParameters || {}
+                  templateParameters: stringParams
                 }),
               });
 

@@ -1,506 +1,142 @@
 trigger: none
 
 # ============================================================
-# PIPELINE 4 – KEY VAULT
-# Reproduit l'expérience "Créer un Key Vault" du portail Azure
-# ⚠️ Sélectionner le même préfixe + env que les Pipelines #1 et #3
+# PIPELINE – KEY VAULT
+# Template mince : appelle le template centralisé terraform-ci-cd.yml
+# Le code Terraform se trouve dans IDP-MIC/pipelines/keyvault
 # ============================================================
 
 parameters:
 
-  # ── ACTION ────────────────────────────────────────────────
   - name: action
     displayName: "⚡ Action"
     type: string
     default: apply
-    values:
-      - plan
-      - apply
-      - destroy
-
-  # ═══════════════════════════════════════════════════════════
-  # SECTION 1 – RESOURCE GROUP CIBLE
-  # ═══════════════════════════════════════════════════════════
+    values: [plan, apply, destroy]
 
   - name: resource_group_name
-    displayName: "📁 [Resource Group] Nom du RG cible"
+    displayName: "📁 Nom du Resource Group cible"
     type: string
     default: ""
 
   - name: key_vault_name
-    displayName: "💎 [Key Vault] Nom du Key Vault (3-24 caractères, unique)"
+    displayName: "💎 Nom du Key Vault (3-24 caractères)"
     type: string
     default: ""
 
-  # ═══════════════════════════════════════════════════════════
-  # SECTION 2 – STORAGE ACCOUNT LIÉ (Pipeline #3)
-  # Si le Storage a été déployé, sélectionner le même env
-  # pour que le KV sauvegarde automatiquement son nom
-  # ═══════════════════════════════════════════════════════════
-
-  - name: link_storage
-    displayName: "🔗 [Storage] Lier au Storage Account existant ?"
+  - name: location
+    displayName: "🌍 Région"
     type: string
-    default: "true"
-    values:
-      - "true"
-      - "false"
-
-  - name: link_storage_account_name
-    displayName: "🔗 [Storage] Nom du Storage Account lié (optionnel)"
-    type: string
-    default: ""
-
-  # ═══════════════════════════════════════════════════════════
-  # SECTION 3 – BASICS (onglet "Basics")
-  # ═══════════════════════════════════════════════════════════
+    default: "West Europe"
 
   - name: environment
     displayName: "🌱 Environnement"
     type: string
     default: "dev"
-    values:
-      - "dev"
-      - "test"
-      - "staging"
-      - "prod"
-      - "sandbox"
-      - "poc"
-
-  - name: location
-    displayName: "🌍 [Basics] Région"
-    type: string
-    default: "West Europe"
-    values:
-      - "West Europe"
-      - "North Europe"
-      - "France Central"
-      - "France South"
-      - "Germany West Central"
-      - "Switzerland North"
-      - "UK South"
-      - "UK West"
-      - "Sweden Central"
-      - "East US"
-      - "East US 2"
-      - "West US 2"
-      - "Canada Central"
-      - "Southeast Asia"
-      - "Australia East"
-      - "Japan East"
+    values: [dev, test, staging, prod, sandbox, poc]
 
   - name: keyvault_sku
-    displayName: "💎 [Basics] Pricing Tier (SKU)"
+    displayName: "💎 SKU"
     type: string
     default: "standard"
-    values:
-      - "standard"   # Usage général, secrets/keys/certificates
-      - "premium"    # + HSM (Hardware Security Module)
+    values: [standard, premium]
 
   - name: keyvault_retention_days
-    displayName: "🗓️ [Basics] Soft Delete retention (jours)"
-    type: number
-    default: 7
-    values:
-      - 7
-      - 14
-      - 30
-      - 60
-      - 90
-
-  # ═══════════════════════════════════════════════════════════
-  # SECTION 4 – ACCESS POLICY (onglet "Access configuration")
-  # ═══════════════════════════════════════════════════════════
+    displayName: "🗓️ Rétention (jours)"
+    type: string
+    default: "90"
 
   - name: keyvault_purge_protection
-    displayName: "🔒 [Access] Purge Protection (recommandé prod)"
+    displayName: "🛡️ Protection contre la purge"
     type: string
-    default: "false"
-    values:
-      - "true"
-      - "false"
+    default: "true"
+    values: ["true", "false"]
 
   - name: keyvault_disk_encryption
-    displayName: "💿 [Access] Autoriser Azure Disk Encryption"
+    displayName: "🔒 Chiffrement disque Azure"
     type: string
-    default: "true"
-    values:
-      - "true"
-      - "false"
+    default: "false"
+    values: ["true", "false"]
 
   - name: keyvault_deployment
-    displayName: "🚀 [Access] Autoriser Azure Deployment (VMs)"
+    displayName: "🚀 Déploiement ARM autorisé"
     type: string
-    default: "true"
-    values:
-      - "true"
-      - "false"
+    default: "false"
+    values: ["true", "false"]
 
-  # ═══════════════════════════════════════════════════════════
-  # SECTION 5 – SECRETS À STOCKER AUTOMATIQUEMENT
-  # ═══════════════════════════════════════════════════════════
+  - name: link_storage
+    displayName: "📦 Lier à un Storage Account"
+    type: string
+    default: "false"
+    values: ["true", "false"]
+
+  - name: link_storage_account_name
+    displayName: "📦 Nom du Storage Account lié"
+    type: string
+    default: ""
 
   - name: store_vm_password
-    displayName: "🔑 [Secrets] Stocker le mot de passe VM admin"
+    displayName: "🔑 Stocker le mot de passe VM"
     type: string
-    default: "true"
-    values:
-      - "true"
-      - "false"
-
-  # ═══════════════════════════════════════════════════════════
-  # SECTION 6 – TAGS
-  # ═══════════════════════════════════════════════════════════
+    default: "false"
+    values: ["true", "false"]
 
   - name: tag_owner
-    displayName: "🏷️ [Tags] Owner"
+    displayName: "🏷️ Tag Owner"
     type: string
     default: "MIC-SECOPS"
-    values:
-      - "MIC-SECOPS"
-      - "MIC-IDP"
-      - "NTT-DATA"
-      - "Mercedes-Benz"
-      - "Platform-Team"
-      - "DevOps-Team"
 
   - name: tag_project
-    displayName: "🏷️ [Tags] Project"
+    displayName: "🏷️ Tag Project"
     type: string
     default: "IDP-PFE"
-    values:
-      - "IDP-PFE"
-      - "Mail-API"
-      - "PKI"
-      - "DNS"
-      - "TokenMaster"
-      - "SIEM"
-      - "Platform"
 
   - name: tag_criticality
-    displayName: "🏷️ [Tags] Criticality"
+    displayName: "🏷️ Tag Criticality"
     type: string
-    default: "High"
-    values:
-      - "Low"
-      - "Medium"
-      - "High"
-      - "Critical"
+    default: "Medium"
+    values: [Low, Medium, High, Critical]
 
   - name: tag_data_classification
-    displayName: "🏷️ [Tags] Data Classification"
+    displayName: "🏷️ Tag Data Classification"
     type: string
-    default: "Confidential"
-    values:
-      - "Public"
-      - "Internal"
-      - "Confidential"
-      - "Restricted"
+    default: "Internal"
+    values: [Public, Internal, Confidential, Restricted]
 
 variables:
-  TF_VERSION: "1.14.5"
-  TF_WORKING_DIR: "pipelines/keyvault"
-  SUBSCRIPTION_ID: "0b86b0f9-d3f5-4387-8003-3b8955b9e8fa"
   VM_ADMIN_PASSWORD: "P@ssw0rdPFE2024!"
 
+resources:
+  repositories:
+    - repository: IDP-MIC
+      type: git
+      name: IDP-MIC
+      ref: refs/heads/main
+
 stages:
-
-# ── STAGE 0 : VÉRIFICATION PRÉ-REQUIS ───────────────────────
-- stage: CheckPrerequisites
-  displayName: "0 🔍 Vérifier les ressources liées"
-  jobs:
-  - job: CheckResources
-    pool:
-      vmImage: "ubuntu-latest"
-    steps:
-    - checkout: self
-
-    - task: AzureCLI@2
-      displayName: "✅ Vérifier RG + Storage liés"
-      inputs:
-        azureSubscription: "MIC-IDP"
-        scriptType: "bash"
-        scriptLocation: "inlineScript"
-        inlineScript: |
-          # ── Guard: Charger les variables Backstage si présentes ──
-          if [ -f "$(Pipeline.Workspace)/self/bs-params.sh" ]; then
-            sed -i 's/\r$//' "$(Pipeline.Workspace)/self/bs-params.sh"
-            source "$(Pipeline.Workspace)/self/bs-params.sh"
-            echo "✅ Sourced bs-params.sh from $(Pipeline.Workspace)/self"
-          elif [ -f "bs-params.sh" ]; then
-            sed -i 's/\r$//' bs-params.sh
-            source "bs-params.sh"
-            echo "✅ Sourced bs-params.sh from current directory"
-          else
-            echo "⚠️ bs-params.sh not found – using pipeline parameters only"
-          fi
-
-          RG_NAME="${BS_RESOURCE_GROUP_NAME:-${{ parameters.resource_group_name }}}"
-          [ -z "$RG_NAME" ] && { echo "❌ ERREUR: resource_group_name est vide !"; exit 1; }
-
-          # Vérifier Resource Group (obligatoire)
-          RG_EXISTS=$(az group exists --name "$RG_NAME")
-          if [ "$RG_EXISTS" = "true" ]; then
-            echo "✅ Resource Group '$RG_NAME' trouvé."
-          else
-            echo "❌ ERREUR: Resource Group '$RG_NAME' introuvable. Lancez d'abord Pipeline #1."
-            exit 1
-          fi
-
-          # Le Storage est maintenant vérifié lors du plan Terraform (s'il est passé en option)
-          if [ "${{ parameters.link_storage }}" = "true" ]; then
-            echo "ℹ️  La liaison Storage est activée. Terraform tentera d'utiliser '${{ parameters.link_storage_account_name }}'."
-          fi
-
-# ── STAGE 1 : VALIDATE ──────────────────────────────────────
-- stage: Validate
-  displayName: "1 ✅ Validation"
-  dependsOn: CheckPrerequisites
-  jobs:
-  - job: Validate
-    pool:
-      vmImage: "ubuntu-latest"
-    steps:
-    - checkout: self
-      path: self
-    - checkout: git://IDP-MIC/IDP-MIC
-      path: IDP-MIC
-
-    - script: |
-        wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
-        unzip -q terraform_$(TF_VERSION)_linux_amd64.zip
-        sudo mv terraform /usr/local/bin/
-      displayName: "📦 Installer Terraform"
-
-    - script: |
-        cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)
-        terraform init -backend=false
-        terraform validate
-      displayName: "🔍 Terraform Validate"
-
-# ── STAGE 2 : PLAN ──────────────────────────────────────────
-- stage: Plan
-  displayName: "2 📋 Plan (aperçu)"
-  dependsOn: Validate
-  jobs:
-  - job: Plan
-    pool:
-      vmImage: "ubuntu-latest"
-    steps:
-    - checkout: self
-      path: self
-    - checkout: git://IDP-MIC/IDP-MIC
-      path: IDP-MIC
-
-    - script: |
-        wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
-        unzip -q terraform_$(TF_VERSION)_linux_amd64.zip
-        sudo mv terraform /usr/local/bin/
-      displayName: "📦 Installer Terraform"
-
-    - task: AzureCLI@2
-      displayName: "🔗 Terraform Init + Plan"
-      inputs:
-        azureSubscription: "MIC-IDP"
-        scriptType: "bash"
-        scriptLocation: "inlineScript"
-        addSpnToEnvironment: true
-        inlineScript: |
-          export ARM_CLIENT_ID=$servicePrincipalId
-          export ARM_CLIENT_SECRET=$servicePrincipalKey
-          export ARM_TENANT_ID=$tenantId
-          export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
-          # ── Guard: Charger les variables Backstage si présentes ──
-          if [ -f "$(Pipeline.Workspace)/self/bs-params.sh" ]; then
-            sed -i 's/\r$//' "$(Pipeline.Workspace)/self/bs-params.sh"
-            source "$(Pipeline.Workspace)/self/bs-params.sh"
-            echo "✅ Sourced bs-params.sh from $(Pipeline.Workspace)/self"
-          elif [ -f "bs-params.sh" ]; then
-            sed -i 's/\r$//' bs-params.sh
-            source "bs-params.sh"
-            echo "✅ Sourced bs-params.sh from current directory"
-          else
-            echo "⚠️ bs-params.sh not found!"
-          fi
-
-          # ── Guard: fallback si paramètres vides ─────────────────
-          RG_NAME="${BS_RESOURCE_GROUP_NAME:-${{ parameters.resource_group_name }}}"
-          KV_NAME="${BS_KEY_VAULT_NAME:-${{ parameters.key_vault_name }}}"
-          [ -z "$RG_NAME" ] && { echo "❌ ERREUR: resource_group_name est vide !"; exit 1; }
-          [ -z "$KV_NAME" ] && { echo "❌ ERREUR: key_vault_name est vide !"; exit 1; }
-          # ───────────────────────────────────────────────
-
-          cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)
-          terraform init \
-            -backend-config="resource_group_name=rg-terraform-state" \
-            -backend-config="storage_account_name=pfetfstate" \
-            -backend-config="container_name=tfstate" \
-            -backend-config="key=kv-${KV_NAME}.tfstate"
-
-          terraform plan \
-            -var="subscription_id=$(SUBSCRIPTION_ID)" \
-            -var="resource_group_name=$RG_NAME" \
-            -var="key_vault_name=$KV_NAME" \
-            -var="linked_storage_account_name=$([ '${{ parameters.link_storage }}' = 'true' ] && echo '${{ parameters.link_storage_account_name }}' || echo '')" \
-            -var="keyvault_sku=${{ parameters.keyvault_sku }}" \
-            -var="keyvault_purge_protection=$([ '${{ parameters.keyvault_purge_protection }}' = 'true' ] && echo true || echo false)" \
-            -var="keyvault_disk_encryption=$([ '${{ parameters.keyvault_disk_encryption }}' = 'true' ] && echo true || echo false)" \
-            -var="keyvault_deployment=$([ '${{ parameters.keyvault_deployment }}' = 'true' ] && echo true || echo false)" \
-            -var="keyvault_retention_days=${{ parameters.keyvault_retention_days }}" \
-            -var="vm_admin_password=$([ '${{ parameters.store_vm_password }}' = 'true' ] && echo $VM_ADMIN_PASSWORD || echo '')" \
-            -out=$(Build.ArtifactStagingDirectory)/tfplan
-
-    - publish: $(Build.ArtifactStagingDirectory)/tfplan
-      artifact: tfplan-keyvault
-
-# ── STAGE 3 : APPLY ─────────────────────────────────────────
-- stage: Apply
-  displayName: "3 🚀 Apply (créer Key Vault)"
-  dependsOn: Plan
-  condition: and(succeeded(), ne('${{ parameters.action }}', 'plan'), ne('${{ parameters.action }}', 'destroy'))
-  jobs:
-  - deployment: Apply
-    environment: "azure-pfe"
-    pool:
-      vmImage: "ubuntu-latest"
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - checkout: self
-            path: self
-          - checkout: git://IDP-MIC/IDP-MIC
-            path: IDP-MIC
-
-          - script: |
-              wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
-              unzip -q terraform_$(TF_VERSION)_linux_amd64.zip
-              sudo mv terraform /usr/local/bin/
-            displayName: "📦 Installer Terraform"
-
-          - task: AzureCLI@2
-            displayName: "✅ Terraform Apply"
-            inputs:
-              azureSubscription: "MIC-IDP"
-              scriptType: "bash"
-              scriptLocation: "inlineScript"
-              addSpnToEnvironment: true
-              inlineScript: |
-                export ARM_CLIENT_ID=$servicePrincipalId
-                export ARM_CLIENT_SECRET=$servicePrincipalKey
-                export ARM_TENANT_ID=$tenantId
-                export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
-                # ── Guard: Charger les variables Backstage si présentes ──
-                if [ -f "$(Pipeline.Workspace)/self/bs-params.sh" ]; then
-                  sed -i 's/\r$//' "$(Pipeline.Workspace)/self/bs-params.sh"
-                  source "$(Pipeline.Workspace)/self/bs-params.sh"
-                  echo "✅ Sourced bs-params.sh from $(Pipeline.Workspace)/self"
-                elif [ -f "bs-params.sh" ]; then
-                  sed -i 's/\r$//' bs-params.sh
-                  source "bs-params.sh"
-                  echo "✅ Sourced bs-params.sh from current directory"
-                else
-                  echo "⚠️ bs-params.sh not found!"
-                fi
-
-                cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)
-                KV_NAME="${BS_KEY_VAULT_NAME:-${{ parameters.key_vault_name }}}"
-                terraform init \
-                  -backend-config="resource_group_name=rg-terraform-state" \
-                  -backend-config="storage_account_name=pfetfstate" \
-                  -backend-config="container_name=tfstate" \
-                  -backend-config="key=kv-${KV_NAME}.tfstate"
-                terraform apply -auto-approve \
-                  $(Pipeline.Workspace)/tfplan-keyvault/tfplan
-
-                echo ""
-                echo "============================================"
-                echo "  ✅ Key Vault créé avec succès !"
-                echo "  📁 RG: ${{ parameters.resource_group_name }}"
-                echo "  🌍 Région: ${{ parameters.location }}"
-                echo "  💎 SKU: ${{ parameters.keyvault_sku }}"
-                echo "  🔒 Purge protection: ${{ parameters.keyvault_purge_protection }}"
-                echo "  🔑 Secrets stockés:"
-                if [ "${{ parameters.store_vm_password }}" = "true" ]; then
-                  echo "     - vm-admin-password"
-                fi
-                if [ "${{ parameters.link_storage }}" = "true" ]; then
-                  echo "     - storage-account-name (lié au storage ${_link_storage_account})"
-                fi
-                echo "============================================"
-                terraform output
-
-# ── STAGE 4 : DESTROY ───────────────────────────────────────
-- stage: Destroy
-  displayName: "4 🗑️ Destroy (supprimer Key Vault)"
-  dependsOn: []
-  condition: eq('${{ parameters.action }}', 'destroy')
-  jobs:
-  - deployment: Destroy
-    environment: "azure-pfe"
-    pool:
-      vmImage: "ubuntu-latest"
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - checkout: self
-            path: self
-          - checkout: git://IDP-MIC/IDP-MIC
-            path: IDP-MIC
-
-          - script: |
-              wget -q https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_linux_amd64.zip
-              unzip -q terraform_$(TF_VERSION)_linux_amd64.zip
-              sudo mv terraform /usr/local/bin/
-            displayName: "📦 Installer Terraform"
-
-          - task: AzureCLI@2
-            displayName: "🗑️ Terraform Destroy"
-            inputs:
-              azureSubscription: "MIC-IDP"
-              scriptType: "bash"
-              scriptLocation: "inlineScript"
-              addSpnToEnvironment: true
-              inlineScript: |
-                export ARM_CLIENT_ID=$servicePrincipalId
-                export ARM_CLIENT_SECRET=$servicePrincipalKey
-                export ARM_TENANT_ID=$tenantId
-                export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
-                # ── Guard: Charger les variables Backstage si présentes ──
-                if [ -f "$(Pipeline.Workspace)/self/bs-params.sh" ]; then
-                  sed -i 's/\r$//' "$(Pipeline.Workspace)/self/bs-params.sh"
-                  source "$(Pipeline.Workspace)/self/bs-params.sh"
-                  echo "✅ Sourced bs-params.sh from $(Pipeline.Workspace)/self"
-                elif [ -f "bs-params.sh" ]; then
-                  sed -i 's/\r$//' bs-params.sh
-                  source "bs-params.sh"
-                  echo "✅ Sourced bs-params.sh from current directory"
-                else
-                  echo "⚠️ bs-params.sh not found!"
-                fi
-
-                # ── Guard: fallback si paramètres vides ─────────────────
-                RG_NAME="${BS_RESOURCE_GROUP_NAME:-${{ parameters.resource_group_name }}}"
-                KV_NAME="${BS_KEY_VAULT_NAME:-${{ parameters.key_vault_name }}}"
-                [ -z "$RG_NAME" ] && { echo "❌ ERREUR: resource_group_name est vide !"; exit 1; }
-                [ -z "$KV_NAME" ] && { echo "❌ ERREUR: key_vault_name est vide !"; exit 1; }
-                # ───────────────────────────────────────────────
-
-                cd $(Pipeline.Workspace)/IDP-MIC/$(TF_WORKING_DIR)
-                terraform init \
-                  -backend-config="resource_group_name=rg-terraform-state" \
-                  -backend-config="storage_account_name=pfetfstate" \
-                  -backend-config="container_name=tfstate" \
-                  -backend-config="key=kv-${KV_NAME}.tfstate"
-                terraform destroy -auto-approve \
-                  -var="subscription_id=$(SUBSCRIPTION_ID)" \
-                  -var="resource_group_name=$RG_NAME" \
-                  -var="key_vault_name=$KV_NAME" \
-                  -var="linked_storage_account_name=$([ '${{ parameters.link_storage }}' = 'true' ] && echo '${{ parameters.link_storage_account_name }}' || echo '')" \
-                  -var="keyvault_sku=${{ parameters.keyvault_sku }}" \
-                  -var="keyvault_purge_protection=$([ '${{ parameters.keyvault_purge_protection }}' = 'true' ] && echo true || echo false)" \
-                  -var="keyvault_disk_encryption=$([ '${{ parameters.keyvault_disk_encryption }}' = 'true' ] && echo true || echo false)" \
-                  -var="keyvault_deployment=$([ '${{ parameters.keyvault_deployment }}' = 'true' ] && echo true || echo false)" \
-                  -var="keyvault_retention_days=${{ parameters.keyvault_retention_days }}" \
-                  -var="vm_admin_password=$(VM_ADMIN_PASSWORD)"
+- template: templates/terraform-ci-cd.yml@IDP-MIC
+  parameters:
+    action: ${{ parameters.action }}
+    service_connection: 'MIC-IDP'
+    tf_working_dir: 'pipelines/keyvault'
+    tfstate_key_prefix: 'kv'
+    resource_group_name: ${{ parameters.resource_group_name }}
+    resource_name: ${{ parameters.key_vault_name }}
+    bs_resource_name_var: 'BS_KEY_VAULT_NAME'
+    check_rg_exists: true
+    vm_admin_password_secret: $(VM_ADMIN_PASSWORD)
+    tf_extra_vars: >
+      -var="key_vault_name=${RESOURCE_NAME}"
+      -var="location=${{ parameters.location }}"
+      -var="environment=${{ parameters.environment }}"
+      -var="keyvault_sku=${{ parameters.keyvault_sku }}"
+      -var="keyvault_retention_days=${{ parameters.keyvault_retention_days }}"
+      -var="keyvault_purge_protection=$([ '${{ parameters.keyvault_purge_protection }}' = 'true' ] && echo true || echo false)"
+      -var="keyvault_disk_encryption=$([ '${{ parameters.keyvault_disk_encryption }}' = 'true' ] && echo true || echo false)"
+      -var="keyvault_deployment=$([ '${{ parameters.keyvault_deployment }}' = 'true' ] && echo true || echo false)"
+      -var="linked_storage_account_name=$([ '${{ parameters.link_storage }}' = 'true' ] && echo '${{ parameters.link_storage_account_name }}' || echo '')"
+      -var="vm_admin_password=$([ '${{ parameters.store_vm_password }}' = 'true' ] && echo $VM_ADMIN_PASSWORD || echo '')"
+      -var="tag_owner=${{ parameters.tag_owner }}"
+      -var="tag_project=${{ parameters.tag_project }}"
+      -var="tag_criticality=${{ parameters.tag_criticality }}"
+      -var="tag_data_classification=${{ parameters.tag_data_classification }}"

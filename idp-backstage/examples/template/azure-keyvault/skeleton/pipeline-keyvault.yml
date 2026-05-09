@@ -322,7 +322,7 @@ stages:
 
           # ── Guard: fallback si paramètres vides ─────────────────
           RG_NAME="${BS_RESOURCE_GROUP_NAME:-${{ parameters.resource_group_name }}}"
-          KV_NAME="${{ parameters.key_vault_name }}"
+          KV_NAME="${BS_KEY_VAULT_NAME:-${{ parameters.key_vault_name }}}"
           [ -z "$RG_NAME" ] && { echo "❌ ERREUR: resource_group_name est vide !"; exit 1; }
           [ -z "$KV_NAME" ] && { echo "❌ ERREUR: key_vault_name est vide !"; exit 1; }
           # ───────────────────────────────────────────────
@@ -398,7 +398,7 @@ stages:
                 fi
 
                 cd $(TF_WORKING_DIR)
-                KV_NAME="${{ parameters.key_vault_name }}"
+                KV_NAME="${BS_KEY_VAULT_NAME:-${{ parameters.key_vault_name }}}"
                 terraform init \
                   -backend-config="resource_group_name=rg-terraform-state" \
                   -backend-config="storage_account_name=pfetfstate" \
@@ -473,7 +473,7 @@ stages:
 
                 # ── Guard: fallback si paramètres vides ─────────────────
                 RG_NAME="${BS_RESOURCE_GROUP_NAME:-${{ parameters.resource_group_name }}}"
-                KV_NAME="${{ parameters.key_vault_name }}"
+                KV_NAME="${BS_KEY_VAULT_NAME:-${{ parameters.key_vault_name }}}"
                 [ -z "$RG_NAME" ] && { echo "❌ ERREUR: resource_group_name est vide !"; exit 1; }
                 [ -z "$KV_NAME" ] && { echo "❌ ERREUR: key_vault_name est vide !"; exit 1; }
                 # ───────────────────────────────────────────────

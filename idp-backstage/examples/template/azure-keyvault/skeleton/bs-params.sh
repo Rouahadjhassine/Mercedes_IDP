@@ -1,5 +1,5 @@
 #!/bin/bash
-export BS_KEYVAULT_NAME="${{ values.keyvault_name }}"
+export BS_KEY_VAULT_NAME="${{ values.key_vault_name }}"
 export BS_RESOURCE_GROUP_NAME="${{ values.resource_group_name }}"
 export BS_LOCATION="${{ values.location }}"
 export BS_ENVIRONMENT="${{ values.environment }}"

@@ -1,10 +1,9 @@
 # ================================================================
 # TEMPLATE CENTRALISÉ TERRAFORM CI/CD – IDP-MIC
 # Tous les pipelines générés par Backstage appellent ce template.
-# Avantages :
-#   ✅ DRY : logique commune écrite une seule fois
-#   ✅ Sécurité : permissions accordées au template, pas aux pipelines
-#   ✅ Maintenabilité : une correction ici corrige tous les pipelines
+# ✅ DRY : logique commune écrite une seule fois
+# ✅ Sécurité : permissions accordées au template, pas aux pipelines
+# ✅ Maintenabilité : une correction ici corrige tous les pipelines
 # ================================================================
 
 parameters:
@@ -48,35 +47,36 @@ parameters:
     default: ''
 
   # ── VARIABLES TERRAFORM SPÉCIFIQUES ──────────────────────────
-  # Chaîne bash (évaluée au runtime) avec les -var propres à la ressource
   - name: tf_extra_vars
     type: string
     default: ''
 
-  # ── OPTIONS ───────────────────────────────────────────────────
+  # ── VÉRIFICATION RG (false = Resource Group pipeline) ─────────
   - name: check_rg_exists
     type: boolean
     default: true
 
+  # ── MOT DE PASSE VM (vide si non utilisé) ─────────────────────
   - name: vm_admin_password_secret
     type: string
     default: ''
 
 stages:
 
-# ── STAGE 0 : CHECK PRÉ-REQUIS (optionnel) ─────────────────────
-- ${{ if eq(parameters.check_rg_exists, true) }}:
-  - stage: CheckPrerequisites
-    displayName: "0 🔍 Vérifier le Resource Group cible"
-    jobs:
-    - job: CheckRG
-      pool:
-        vmImage: "ubuntu-latest"
-      steps:
-      - checkout: self
-        path: self
+# ── STAGE 0 : CHECK PRÉ-REQUIS ─────────────────────────────────
+# Toujours présent. Si check_rg_exists=false, il s'exécute vide (Resource Group pipeline).
+- stage: CheckPrerequisites
+  displayName: "0 🔍 Vérification des pré-requis"
+  jobs:
+  - job: CheckRG
+    pool:
+      vmImage: "ubuntu-latest"
+    steps:
+    - checkout: self
+      path: self
+    - ${{ if eq(parameters.check_rg_exists, true) }}:
       - task: AzureCLI@2
-        displayName: "✅ Vérifier que le RG cible existe"
+        displayName: "✅ Vérifier que le Resource Group cible existe"
         inputs:
           azureSubscription: "${{ parameters.service_connection }}"
           scriptType: "bash"
@@ -101,12 +101,15 @@ stages:
               echo "❌ Resource Group '$RG_NAME' introuvable. Lancez d'abord le Pipeline Resource Group."
               exit 1
             fi
+    - ${{ if ne(parameters.check_rg_exists, true) }}:
+      - script: |
+          echo "ℹ️ Pas de vérification de Resource Group requise pour ce pipeline (Resource Group est la ressource racine)."
+        displayName: "ℹ️ Étape de vérification ignorée"
 
 # ── STAGE 1 : VALIDATE ─────────────────────────────────────────
 - stage: Validate
   displayName: "1 ✅ Validation Terraform"
-  ${{ if eq(parameters.check_rg_exists, true) }}:
-    dependsOn: CheckPrerequisites
+  dependsOn: CheckPrerequisites
   jobs:
   - job: Validate
     pool:
@@ -114,7 +117,7 @@ stages:
     steps:
     - checkout: self
       path: self
-    - checkout: git://IDP-MIC/IDP-MIC
+    - checkout: IDP-MIC
       path: IDP-MIC
     - script: |
         wget -q https://releases.hashicorp.com/terraform/${{ parameters.tf_version }}/terraform_${{ parameters.tf_version }}_linux_amd64.zip
@@ -139,7 +142,7 @@ stages:
     steps:
     - checkout: self
       path: self
-    - checkout: git://IDP-MIC/IDP-MIC
+    - checkout: IDP-MIC
       path: IDP-MIC
     - script: |
         wget -q https://releases.hashicorp.com/terraform/${{ parameters.tf_version }}/terraform_${{ parameters.tf_version }}_linux_amd64.zip
@@ -174,16 +177,20 @@ stages:
           # ── Résolution des variables ────────────────────────────────
           RG_NAME="${BS_RESOURCE_GROUP_NAME:-${{ parameters.resource_group_name }}}"
           BS_VAR="${{ parameters.bs_resource_name_var }}"
-          RESOURCE_NAME="${!BS_VAR:-${{ parameters.resource_name }}}"
+          if [ -n "$BS_VAR" ]; then
+            RESOURCE_NAME="${!BS_VAR:-${{ parameters.resource_name }}}"
+          else
+            RESOURCE_NAME="${{ parameters.resource_name }}"
+          fi
           LOCATION="${BS_LOCATION:-West Europe}"
           ENVIRONMENT="${BS_ENVIRONMENT:-dev}"
 
           [ -z "$RG_NAME" ] && { echo "❌ resource_group_name est vide !"; exit 1; }
-          echo "📋 RG=$RG_NAME | RESOURCE=$RESOURCE_NAME | LOC=$LOCATION | ENV=$ENVIRONMENT"
+          echo "📋 RG=$RG_NAME | RESOURCE=${RESOURCE_NAME:-N/A} | LOC=$LOCATION | ENV=$ENVIRONMENT"
 
           # ── Terraform Init ──────────────────────────────────────────
-          cd $(Pipeline.Workspace)/IDP-MIC/${{ parameters.tf_working_dir }}
           TFSTATE_RESOURCE="${RESOURCE_NAME:-$RG_NAME}"
+          cd $(Pipeline.Workspace)/IDP-MIC/${{ parameters.tf_working_dir }}
           terraform init \
             -backend-config="resource_group_name=rg-terraform-state" \
             -backend-config="storage_account_name=pfetfstate" \
@@ -216,7 +223,7 @@ stages:
           steps:
           - checkout: self
             path: self
-          - checkout: git://IDP-MIC/IDP-MIC
+          - checkout: IDP-MIC
             path: IDP-MIC
           - script: |
               wget -q https://releases.hashicorp.com/terraform/${{ parameters.tf_version }}/terraform_${{ parameters.tf_version }}_linux_amd64.zip
@@ -245,7 +252,11 @@ stages:
                 fi
 
                 BS_VAR="${{ parameters.bs_resource_name_var }}"
-                RESOURCE_NAME="${!BS_VAR:-${{ parameters.resource_name }}}"
+                if [ -n "$BS_VAR" ]; then
+                  RESOURCE_NAME="${!BS_VAR:-${{ parameters.resource_name }}}"
+                else
+                  RESOURCE_NAME="${{ parameters.resource_name }}"
+                fi
                 TFSTATE_RESOURCE="${RESOURCE_NAME:-${BS_RESOURCE_GROUP_NAME:-${{ parameters.resource_group_name }}}}"
 
                 cd $(Pipeline.Workspace)/IDP-MIC/${{ parameters.tf_working_dir }}
@@ -274,7 +285,7 @@ stages:
           steps:
           - checkout: self
             path: self
-          - checkout: git://IDP-MIC/IDP-MIC
+          - checkout: IDP-MIC
             path: IDP-MIC
           - script: |
               wget -q https://releases.hashicorp.com/terraform/${{ parameters.tf_version }}/terraform_${{ parameters.tf_version }}_linux_amd64.zip
@@ -304,7 +315,11 @@ stages:
 
                 RG_NAME="${BS_RESOURCE_GROUP_NAME:-${{ parameters.resource_group_name }}}"
                 BS_VAR="${{ parameters.bs_resource_name_var }}"
-                RESOURCE_NAME="${!BS_VAR:-${{ parameters.resource_name }}}"
+                if [ -n "$BS_VAR" ]; then
+                  RESOURCE_NAME="${!BS_VAR:-${{ parameters.resource_name }}}"
+                else
+                  RESOURCE_NAME="${{ parameters.resource_name }}"
+                fi
                 TFSTATE_RESOURCE="${RESOURCE_NAME:-$RG_NAME}"
                 [ -z "$RG_NAME" ] && { echo "❌ resource_group_name est vide !"; exit 1; }
 

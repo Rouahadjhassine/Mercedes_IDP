@@ -182,8 +182,10 @@ stages:
           else
             RESOURCE_NAME="${{ parameters.resource_name }}"
           fi
-          LOCATION="${BS_LOCATION:-West Europe}"
-          ENVIRONMENT="${BS_ENVIRONMENT:-dev}"
+          LOCATION="${BS_LOCATION:-${{ parameters.location }}}"
+          LOCATION="${LOCATION:-West Europe}"
+          ENVIRONMENT="${BS_ENVIRONMENT:-${{ parameters.environment }}}"
+          ENVIRONMENT="${ENVIRONMENT:-dev}"
 
           [ -z "$RG_NAME" ] && { echo "❌ resource_group_name est vide !"; exit 1; }
           echo "📋 RG=$RG_NAME | RESOURCE=${RESOURCE_NAME:-N/A} | LOC=$LOCATION | ENV=$ENVIRONMENT"
@@ -198,11 +200,13 @@ stages:
             -backend-config="key=${{ parameters.tfstate_key_prefix }}-${TFSTATE_RESOURCE}.tfstate"
 
           # ── Terraform Plan ──────────────────────────────────────────
+          mkdir -p "$(Build.ArtifactStagingDirectory)"
+          TFPLAN_OUT="$(Build.ArtifactStagingDirectory)/tfplan"
           terraform plan \
             -var="subscription_id=${{ parameters.subscription_id }}" \
             -var="resource_group_name=$RG_NAME" \
             ${{ parameters.tf_extra_vars }} \
-            -out=$(Build.ArtifactStagingDirectory)/tfplan
+            -out="${TFPLAN_OUT}"
 
     - publish: $(Build.ArtifactStagingDirectory)/tfplan
       artifact: tfplan-artifact
@@ -329,8 +333,9 @@ stages:
                   -backend-config="storage_account_name=pfetfstate" \
                   -backend-config="container_name=tfstate" \
                   -backend-config="key=${{ parameters.tfstate_key_prefix }}-${TFSTATE_RESOURCE}.tfstate"
+                TF_EXTRA_VARS="${{ parameters.tf_extra_vars }}"
                 terraform destroy -auto-approve \
                   -var="subscription_id=${{ parameters.subscription_id }}" \
                   -var="resource_group_name=$RG_NAME" \
-                  ${{ parameters.tf_extra_vars }}
+                  ${TF_EXTRA_VARS}
                 echo "🗑️ Destroy terminé."

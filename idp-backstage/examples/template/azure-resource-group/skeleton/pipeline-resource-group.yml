@@ -91,7 +91,7 @@ stages:
     resource_name: ${{ parameters.resource_group_name }}
     bs_resource_name_var: 'BS_RESOURCE_GROUP_NAME'
     check_rg_exists: false
-    tf_extra_vars: >
+    tf_extra_vars: >-
       -var="location=${{ parameters.location }}"
       -var="environment=${{ parameters.environment }}"
       -var="owner=${{ parameters.tag_owner }}"

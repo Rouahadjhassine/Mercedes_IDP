@@ -101,7 +101,7 @@ stages:
     bs_resource_name_var: 'BS_VM_NAME'
     check_rg_exists: true
     vm_admin_password_secret: $(VM_ADMIN_PASSWORD)
-    tf_extra_vars: >
+    tf_extra_vars: >-
       -var="vm_name=${RESOURCE_NAME}"
       -var="location=${{ parameters.location }}"
       -var="environment=${{ parameters.environment }}"

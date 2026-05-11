@@ -103,7 +103,7 @@ stages:
     resource_name: ${{ parameters.storage_account_name }}
     bs_resource_name_var: 'BS_STORAGE_ACCOUNT_NAME'
     check_rg_exists: true
-    tf_extra_vars: >
+    tf_extra_vars: >-
       -var="storage_account_name=${RESOURCE_NAME}"
       -var="location=${{ parameters.location }}"
       -var="environment=${{ parameters.environment }}"

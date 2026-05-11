@@ -43,8 +43,8 @@ variable "storage_kind" {
 
 variable "storage_retention_days" {
   description = "Jours de rétention pour les soft deletes"
-  type        = number
-  default     = 7
+  type        = string
+  default     = "7"
 }
 
 # ── Variables passées par le pipeline (tags & metadata) ──────────

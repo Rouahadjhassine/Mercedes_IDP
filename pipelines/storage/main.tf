@@ -17,5 +17,5 @@ module "storage" {
   storage_replication_type = var.storage_replication_type
   storage_access_tier      = var.storage_access_tier
   storage_kind             = var.storage_kind
-  storage_retention_days   = var.storage_retention_days
+  storage_retention_days   = tonumber(coalesce(var.storage_retention_days, "7"))
 }

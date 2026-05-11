@@ -25,8 +25,8 @@ variable "keyvault_sku" {
 
 variable "keyvault_retention_days" {
   description = "Jours de rétention soft delete"
-  type        = number
-  default     = 7
+  type        = string
+  default     = "90"
 }
 
 variable "keyvault_purge_protection" {

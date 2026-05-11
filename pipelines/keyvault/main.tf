@@ -33,7 +33,7 @@ module "keyvault" {
   object_id           = data.azurerm_client_config.current.object_id
 
   keyvault_sku              = var.keyvault_sku
-  keyvault_retention_days   = var.keyvault_retention_days
+  keyvault_retention_days   = tonumber(coalesce(var.keyvault_retention_days, "90"))
   keyvault_purge_protection = var.keyvault_purge_protection
   keyvault_disk_encryption  = var.keyvault_disk_encryption
   keyvault_deployment       = var.keyvault_deployment

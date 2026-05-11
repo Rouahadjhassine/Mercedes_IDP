@@ -143,6 +143,12 @@ catalog:
       rules:
         - allow: [Template]
 
+    # 🗑️ Template 5 – Delete Azure Resource
+    - type: file
+      target: ../../examples/template/azure-destroy/template.yaml
+      rules:
+        - allow: [Template]
+
     # [DÉSACTIVÉ] Ancien Golden Path généraliste (remplacé par la marketplace)
     # - type: file
     #   target: ../../examples/template/azure-golden-path/template.yaml

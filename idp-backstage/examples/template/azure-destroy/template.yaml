@@ -1,0 +1,72 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: azure-destroy-resource
+  title: "🗑️ Supprimer une ressource Azure"
+  description: >
+    Sélectionnez une ressource existante dans le catalogue pour lancer son pipeline de suppression (action: destroy).
+  tags:
+    - azure
+    - terraform
+    - destroy
+    - admin
+  links:
+    - url: https://portal.azure.com
+      title: Voir sur Azure Portal
+      icon: web
+spec:
+  owner: user:guest
+  type: service
+
+  parameters:
+    - title: "🗑️ Sélection de la ressource à supprimer"
+      required:
+        - target_entity
+      properties:
+        target_entity:
+          title: "Sélectionnez la ressource"
+          type: string
+          description: "La ressource choisie sera supprimée définitivement d'Azure."
+          ui:field: EntityPicker
+          ui:options:
+            catalogFilter:
+              - kind: Component
+                spec.type: azure-resource-group
+              - kind: Component
+                spec.type: azure-storage-account
+              - kind: Component
+                spec.type: azure-key-vault
+              - kind: Component
+                spec.type: azure-virtual-machine
+
+  steps:
+    - id: fetch-entity
+      name: "🔍 Récupération des informations de la ressource"
+      action: catalog:fetch
+      input:
+        entityRef: ${{ parameters.target_entity }}
+
+    - id: run-destroy-pipeline
+      name: "💣 Lancement du Pipeline de destruction"
+      action: ado:pipeline:run
+      input:
+        # On extrait l'organisation depuis l'annotation (ou valeur par défaut ymi0337)
+        organization: "ymi0337"
+        project: ${{ steps['fetch-entity'].output.entity.metadata.annotations['dev.azure.com/project'] }}
+        repo: ${{ steps['fetch-entity'].output.entity.metadata.annotations['dev.azure.com/repo'] }}
+        # Le nom du pipeline est conventionnel: pipeline-[repo]
+        pipelineName: pipeline-${{ steps['fetch-entity'].output.entity.metadata.annotations['dev.azure.com/repo'] }}
+        yamlPath: ${{ steps['fetch-entity'].output.entity.metadata.annotations['dev.azure.com/pipeline-file'] }}
+        templateParameters:
+          action: destroy
+
+  output:
+    links:
+      - title: "▶️ Voir l'exécution du Pipeline de destruction"
+        url: ${{ steps['run-destroy-pipeline'].output.pipelineRunUrl }}
+    text:
+      - title: "💣 Suppression en cours"
+        content: |
+          ### La demande de destruction a été envoyée !
+          
+          Le pipeline Azure DevOps `${{ steps['run-destroy-pipeline'].output.pipelineId }}` est en cours d'exécution pour détruire l'infrastructure.

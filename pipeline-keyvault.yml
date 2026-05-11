@@ -288,9 +288,25 @@ stages:
 
           # ── Guard: fallback si paramètres vides ─────────────────
           RG_NAME="${BS_RESOURCE_GROUP_NAME:-${{ parameters.resource_group_name }}}"
-          KV_NAME="${{ parameters.key_vault_name }}"
+          KV_NAME="${BS_KEY_VAULT_NAME:-${{ parameters.key_vault_name }}}"
           [ -z "$RG_NAME" ] && { echo "❌ ERREUR: resource_group_name est vide !"; exit 1; }
           [ -z "$KV_NAME" ] && { echo "❌ ERREUR: key_vault_name est vide !"; exit 1; }
+          # ── Guard: résolution des paramètres Key Vault ───────────────
+          KV_SKU="${BS_KEYVAULT_SKU:-${{ parameters.keyvault_sku }}}"
+          [ -z "$KV_SKU" ] && KV_SKU="standard"
+          KV_RETENTION="${BS_KEYVAULT_RETENTION_DAYS:-${{ parameters.keyvault_retention_days }}}"
+          [ -z "$KV_RETENTION" ] && KV_RETENTION="90"
+          KV_PURGE_RAW="${BS_KEYVAULT_PURGE_PROTECTION:-${{ parameters.keyvault_purge_protection }}}"
+          KV_PURGE=$([ "$KV_PURGE_RAW" = 'True' ] || [ "$KV_PURGE_RAW" = 'true' ] && echo true || echo false)
+          KV_DISK_RAW="${BS_KEYVAULT_DISK_ENCRYPTION:-${{ parameters.keyvault_disk_encryption }}}"
+          KV_DISK=$([ "$KV_DISK_RAW" = 'True' ] || [ "$KV_DISK_RAW" = 'true' ] && echo true || echo false)
+          KV_DEPLOY_RAW="${BS_KEYVAULT_DEPLOYMENT:-${{ parameters.keyvault_deployment }}}"
+          KV_DEPLOY=$([ "$KV_DEPLOY_RAW" = 'True' ] || [ "$KV_DEPLOY_RAW" = 'true' ] && echo true || echo false)
+          LINK_STORAGE_RAW="${BS_LINK_STORAGE:-${{ parameters.link_storage }}}"
+          LINK_STORAGE_NAME="${BS_LINK_STORAGE_ACCOUNT_NAME:-${{ parameters.link_storage_account_name }}}"
+          LINKED_SA=$([ "$LINK_STORAGE_RAW" = 'True' ] || [ "$LINK_STORAGE_RAW" = 'true' ] && echo "$LINK_STORAGE_NAME" || echo '')
+          STORE_VM_PASS_RAW="${BS_STORE_VM_PASSWORD:-${{ parameters.store_vm_password }}}"
+          VM_PASS=$([ "$STORE_VM_PASS_RAW" = 'True' ] || [ "$STORE_VM_PASS_RAW" = 'true' ] && echo $VM_ADMIN_PASSWORD || echo '')
           # ───────────────────────────────────────────────
 
           cd $(TF_WORKING_DIR)
@@ -304,13 +320,13 @@ stages:
             -var="subscription_id=$(SUBSCRIPTION_ID)" \
             -var="resource_group_name=$RG_NAME" \
             -var="key_vault_name=$KV_NAME" \
-            -var="linked_storage_account_name=$([ '${{ parameters.link_storage }}' = 'True' ] && echo '${{ parameters.link_storage_account_name }}' || echo '')" \
-            -var="keyvault_sku=${{ parameters.keyvault_sku }}" \
-            -var="keyvault_purge_protection=$([ '${{ parameters.keyvault_purge_protection }}' = 'True' ] && echo true || echo false)" \
-            -var="keyvault_disk_encryption=$([ '${{ parameters.keyvault_disk_encryption }}' = 'True' ] && echo true || echo false)" \
-            -var="keyvault_deployment=$([ '${{ parameters.keyvault_deployment }}' = 'True' ] && echo true || echo false)" \
-            -var="keyvault_retention_days=${{ parameters.keyvault_retention_days }}" \
-            -var="vm_admin_password=$([ '${{ parameters.store_vm_password }}' = 'True' ] && echo $VM_ADMIN_PASSWORD || echo '')" \
+            -var="linked_storage_account_name=$LINKED_SA" \
+            -var="keyvault_sku=$KV_SKU" \
+            -var="keyvault_purge_protection=$KV_PURGE" \
+            -var="keyvault_disk_encryption=$KV_DISK" \
+            -var="keyvault_deployment=$KV_DEPLOY" \
+            -var="keyvault_retention_days=$KV_RETENTION" \
+            -var="vm_admin_password=$VM_PASS" \
             -out=$(Build.ArtifactStagingDirectory)/tfplan
 
     - publish: $(Build.ArtifactStagingDirectory)/tfplan

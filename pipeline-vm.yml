@@ -299,6 +299,17 @@ stages:
           VM_NAME="${BS_VM_NAME:-${{ parameters.vm_name }}}"
           [ -z "$RG_NAME" ] && { echo "❌ ERREUR: resource_group_name est vide !"; exit 1; }
           [ -z "$VM_NAME" ] && { echo "❌ ERREUR: vm_name est vide !"; exit 1; }
+          # ── Guard: résolution des paramètres VM ──────────────────
+          VM_COUNT="${BS_VM_COUNT:-${{ parameters.vm_count }}}"
+          [ -z "$VM_COUNT" ] && VM_COUNT=1
+          VM_SIZE="${BS_VM_SIZE:-${{ parameters.vm_size }}}"
+          [ -z "$VM_SIZE" ] && VM_SIZE="Standard_B2s"
+          VM_OS_TYPE="${BS_VM_OS_TYPE:-${{ parameters.vm_os_type }}}"
+          [ -z "$VM_OS_TYPE" ] && VM_OS_TYPE="windows"
+          VM_OS_IMAGE="${BS_VM_OS_IMAGE:-${{ parameters.vm_os_image }}}"
+          [ -z "$VM_OS_IMAGE" ] && VM_OS_IMAGE="WindowsServer2022"
+          VM_DISK_TYPE="${BS_VM_DISK_TYPE:-${{ parameters.vm_disk_type }}}"
+          [ -z "$VM_DISK_TYPE" ] && VM_DISK_TYPE="Standard_LRS"
           # ───────────────────────────────────────────────
 
           cd $(TF_WORKING_DIR)
@@ -312,11 +323,11 @@ stages:
             -var="subscription_id=$(SUBSCRIPTION_ID)" \
             -var="resource_group_name=$RG_NAME" \
             -var="vm_name=$VM_NAME" \
-            -var="vm_count=${{ parameters.vm_count }}" \
-            -var="vm_size=${{ parameters.vm_size }}" \
-            -var="vm_os_type=${{ parameters.vm_os_type }}" \
-            -var="vm_os_image=${{ parameters.vm_os_image }}" \
-            -var="vm_disk_type=${{ parameters.vm_disk_type }}" \
+            -var="vm_count=$VM_COUNT" \
+            -var="vm_size=$VM_SIZE" \
+            -var="vm_os_type=$VM_OS_TYPE" \
+            -var="vm_os_image=$VM_OS_IMAGE" \
+            -var="vm_disk_type=$VM_DISK_TYPE" \
             -var="vm_admin_password=$(VM_ADMIN_PASSWORD)" \
             -out=$(Build.ArtifactStagingDirectory)/tfplan
 
@@ -439,6 +450,17 @@ stages:
                 VM_NAME="${BS_VM_NAME:-${{ parameters.vm_name }}}"
                 [ -z "$RG_NAME" ] && { echo "❌ ERREUR: resource_group_name est vide !"; exit 1; }
                 [ -z "$VM_NAME" ] && { echo "❌ ERREUR: vm_name est vide !"; exit 1; }
+                # ── Guard: résolution des paramètres VM ──────────────────
+                VM_COUNT="${BS_VM_COUNT:-${{ parameters.vm_count }}}"
+                [ -z "$VM_COUNT" ] && VM_COUNT=1
+                VM_SIZE="${BS_VM_SIZE:-${{ parameters.vm_size }}}"
+                [ -z "$VM_SIZE" ] && VM_SIZE="Standard_B2s"
+                VM_OS_TYPE="${BS_VM_OS_TYPE:-${{ parameters.vm_os_type }}}"
+                [ -z "$VM_OS_TYPE" ] && VM_OS_TYPE="windows"
+                VM_OS_IMAGE="${BS_VM_OS_IMAGE:-${{ parameters.vm_os_image }}}"
+                [ -z "$VM_OS_IMAGE" ] && VM_OS_IMAGE="WindowsServer2022"
+                VM_DISK_TYPE="${BS_VM_DISK_TYPE:-${{ parameters.vm_disk_type }}}"
+                [ -z "$VM_DISK_TYPE" ] && VM_DISK_TYPE="Standard_LRS"
                 # ───────────────────────────────────────────────
 
                 cd $(TF_WORKING_DIR)
@@ -451,9 +473,9 @@ stages:
                   -var="subscription_id=$(SUBSCRIPTION_ID)" \
                   -var="resource_group_name=$RG_NAME" \
                   -var="vm_name=$VM_NAME" \
-                  -var="vm_count=${{ parameters.vm_count }}" \
-                  -var="vm_size=${{ parameters.vm_size }}" \
-                  -var="vm_os_type=${{ parameters.vm_os_type }}" \
-                  -var="vm_os_image=${{ parameters.vm_os_image }}" \
-                  -var="vm_disk_type=${{ parameters.vm_disk_type }}" \
+                  -var="vm_count=$VM_COUNT" \
+                  -var="vm_size=$VM_SIZE" \
+                  -var="vm_os_type=$VM_OS_TYPE" \
+                  -var="vm_os_image=$VM_OS_IMAGE" \
+                  -var="vm_disk_type=$VM_DISK_TYPE" \
                   -var="vm_admin_password=$(VM_ADMIN_PASSWORD)"

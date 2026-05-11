@@ -182,10 +182,8 @@ stages:
           else
             RESOURCE_NAME="${{ parameters.resource_name }}"
           fi
-          LOCATION="${BS_LOCATION:-${{ parameters.location }}}"
-          LOCATION="${LOCATION:-West Europe}"
-          ENVIRONMENT="${BS_ENVIRONMENT:-${{ parameters.environment }}}"
-          ENVIRONMENT="${ENVIRONMENT:-dev}"
+          LOCATION="${BS_LOCATION:-West Europe}"
+          ENVIRONMENT="${BS_ENVIRONMENT:-dev}"
 
           [ -z "$RG_NAME" ] && { echo "❌ resource_group_name est vide !"; exit 1; }
           echo "📋 RG=$RG_NAME | RESOURCE=${RESOURCE_NAME:-N/A} | LOC=$LOCATION | ENV=$ENVIRONMENT"

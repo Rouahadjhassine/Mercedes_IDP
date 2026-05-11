@@ -46,3 +46,41 @@ variable "storage_retention_days" {
   type        = number
   default     = 7
 }
+
+# ── Variables passées par le pipeline (tags & metadata) ──────────
+
+variable "environment" {
+  description = "Environnement de déploiement (dev, test, staging, prod, sandbox, poc)"
+  type        = string
+  default     = "dev"
+}
+
+variable "location" {
+  description = "Région Azure (info complémentaire, la localisation réelle est celle du Resource Group)"
+  type        = string
+  default     = "West Europe"
+}
+
+variable "tag_owner" {
+  description = "Équipe propriétaire"
+  type        = string
+  default     = "MIC-SECOPS"
+}
+
+variable "tag_project" {
+  description = "Nom du projet"
+  type        = string
+  default     = "IDP-PFE"
+}
+
+variable "tag_criticality" {
+  description = "Niveau de criticité"
+  type        = string
+  default     = "Medium"
+}
+
+variable "tag_data_classification" {
+  description = "Classification des données"
+  type        = string
+  default     = "Internal"
+}

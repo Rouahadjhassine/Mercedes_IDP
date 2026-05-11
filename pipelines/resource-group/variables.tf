@@ -8,7 +8,7 @@ variable "environment" {
   type        = string
   default     = "dev"
   validation {
-    condition     = contains(["dev", "test", "staging", "prod", "sandbox", "poc"], var.environment)
+    condition     = var.environment == "" || contains(["dev", "test", "staging", "prod", "sandbox", "poc"], var.environment)
     error_message = "L'environnement doit être 'dev', 'test', 'staging', 'prod', 'sandbox', ou 'poc'."
   }
 }
@@ -26,10 +26,6 @@ variable "location" {
   description = "Région Azure"
   type        = string
   default     = "West Europe"
-  validation {
-    condition     = length(var.location) > 0
-    error_message = "La région Azure ne peut pas être vide."
-  }
 }
 
 variable "owner" {

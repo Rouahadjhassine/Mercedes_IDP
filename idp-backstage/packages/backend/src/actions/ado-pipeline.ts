@@ -15,10 +15,12 @@ export const adoPipelineModule = createBackendModule({
             schema: {
               input: (z) => z.object({
                 organization: z.string(),
-                project: z.string(),
+                project: z.string().optional(),
                 repo: z.string().optional(),
-                pipelineName: z.string(),
+                projectRepo: z.string().optional(),
+                pipelineName: z.string().optional(),
                 yamlPath: z.string().optional(),
+                resourceType: z.string().optional(),
                 templateParameters: z.record(z.unknown()).optional(),
               }),
               output: (z) => z.object({
@@ -27,7 +29,30 @@ export const adoPipelineModule = createBackendModule({
               }),
             },
             async handler(ctx) {
-              const { organization, project, repo, pipelineName, yamlPath, templateParameters } = ctx.input;
+              let { pipelineName, yamlPath, repo, project } = ctx.input;
+              const { organization, projectRepo, resourceType, templateParameters } = ctx.input;
+              
+              if (!repo && projectRepo) {
+                 repo = projectRepo.split('/')[1];
+              }
+              if (!project && projectRepo) {
+                 project = projectRepo.split('/')[0];
+              }
+              if (!project) project = "IDP-MIC";
+
+              if (!yamlPath && resourceType) {
+                if (resourceType === 'azure-resource-group') yamlPath = 'pipeline-resource-group.yml';
+                else if (resourceType === 'azure-virtual-machine') yamlPath = 'pipeline-vm.yml';
+                else if (resourceType === 'azure-storage-account') yamlPath = 'pipeline-storage.yml';
+                else if (resourceType === 'azure-key-vault') yamlPath = 'pipeline-keyvault.yml';
+              }
+
+              if (!pipelineName && yamlPath && repo) {
+                 pipelineName = `${yamlPath.replace('.yml', '')}-${repo}`;
+              } else if (!pipelineName) {
+                 throw new Error("Missing pipelineName, and cannot guess it without yamlPath and repo.");
+              }
+
               ctx.logger.info(`Starting ADO Pipeline Automation for ${pipelineName}`);
 
               if (!repo) {
@@ -129,7 +154,10 @@ export const adoPipelineModule = createBackendModule({
                       }
                     }
                   },
-                  templateParameters: stringParams
+                  templateParameters: stringParams,
+                  variables: {
+                    ACTION: { value: stringParams['action'] || 'apply' }
+                  }
                 }),
               });
 

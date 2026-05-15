@@ -95,7 +95,7 @@ parameters:
       - "linux"
 
   - name: vm_os_image
-    displayName: "🖼️ [Image] Image OS"
+    displayName: "🖼️ [Image] OS Image"
     type: string
     default: "WindowsServer2022"
     values:
@@ -135,7 +135,7 @@ parameters:
   # ═══════════════════════════════════════════════════════════
 
   - name: vm_disk_type
-    displayName: "💾 [Disks] Type de disque OS"
+    displayName: "💾 [Disks] Disk Type OS"
     type: string
     default: "Standard_LRS"
     values:

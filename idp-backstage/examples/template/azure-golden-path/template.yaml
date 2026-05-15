@@ -3,7 +3,7 @@ kind: Template
 metadata:
   name: azure-golden-path-template
   title: Nouveau Service Azure (Golden Path)
-  description: Génère un dépôt IaC basé sur vos pipelines (VM, KeyVault, Storage, RG).
+  description: Generates an IaC repository based on your pipelines (VM, KeyVault, Storage, RG).
   tags:
     - azure
     - terraform
@@ -28,14 +28,14 @@ spec:
           type: string
           description: Que fait cette application ?
         owner:
-          title: Équipe Propriétaire
+          title: Owning Team
           type: string
           ui:field: OwnerPicker
           ui:options:
             catalogFilter:
               kind: Group
 
-    - title: 2. Identité des Ressources
+    - title: 2. Resource Identity
       required:
         - resource_group_name
         - environment
@@ -79,10 +79,10 @@ spec:
           title: Nom du Key Vault
           type: string
         vm_name:
-          title: Nom de la VM (max 15 caractères)
+          title: VM Name (max 15 chars)
           type: string
         location:
-          title: Région Azure
+          title: Azure Region
           type: string
           enum:
             - West Europe
@@ -107,7 +107,7 @@ spec:
             - Standard_D2s_v3
           default: Standard_B2s
         vm_os_image:
-          title: Image OS
+          title: OS Image
           type: string
           enum:
             - WindowsServer2022
@@ -163,7 +163,7 @@ spec:
 
   steps:
     - id: fetch-base
-      name: Génération du code Infrastructure
+      name: Generating Infrastructure Code
       action: fetch:template
       input:
         url: ./skeleton

@@ -81,10 +81,6 @@ auth:
         clientSecret: ${AZURE_CLIENT_SECRET}
         tenantId: ${AZURE_TENANT_ID}
         domainHint: ${AZURE_TENANT_ID}
-        signIn:
-          resolvers:
-            # Matches the email in the Microsoft profile to the email in a User entity in the catalog
-            - resolver: emailMatchingUserEntityProfileEmail
 
 
 

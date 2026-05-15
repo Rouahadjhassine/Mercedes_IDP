@@ -4,9 +4,9 @@ metadata:
   name: azure-virtual-machine
   title: "💻 Azure Virtual Machine"
   description: >
-    Crée une Machine Virtuelle Azure (Windows ou Linux).
+    Creates an Azure Virtual Machine (Windows or Linux).
     ⚠️ Prerequisite: A Resource Group must already exist.
-    Saisissez le nom du Resource Group exact et le nom de votre future VM.
+    Enter the exact Resource Group name and the name of your future VM.
   tags:
     - azure
     - terraform
@@ -43,7 +43,7 @@ spec:
     # ── STEP 2 : RESOURCE GROUP CIBLE ────────────────────────
     - title: "📁 Header and Identity"
       description: >
-        Saisissez le nom exact du Resource Group (déjà créé) et le nom de votre future Machine Virtuelle.
+        Enter the exact name of the Resource Group (already created) et le nom de votre future Machine Virtuelle.
       required:
         - resource_group_name
         - environment
@@ -141,7 +141,7 @@ spec:
             - "🪟 Windows"
             - "🐧 Linux"
         vm_os_image:
-          title: "🖼️ Image OS"
+          title: "🖼️ OS Image"
           type: string
           default: "WindowsServer2022"
           enum:
@@ -206,7 +206,7 @@ spec:
           enumNames:
             - "Standard HDD — Moins cher (dev/test)"
             - "Standard SSD — Équilibré"
-            - "Premium SSD — Hautes performances (prod recommandé)"
+            - "Premium SSD — Highs performances (prod recommandé)"
             - "Ultra SSD — Performances extrêmes"
 
     # ── STEP 7 : TAGS ─────────────────────────────────────────

@@ -29,7 +29,7 @@ spec:
         description:
           title: Description
           type: string
-          description: "Purpose of this Resource Group (ex: Environnement de développement IDP)"
+          description: "Purpose of this Resource Group (ex: IDP Development Environment)"
         owner:
           title: Owning Team
           type: string

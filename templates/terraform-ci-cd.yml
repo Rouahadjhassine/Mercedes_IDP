@@ -67,7 +67,7 @@ stages:
 # Toujours présent. Si check_rg_exists=false, il s'exécute vide (Resource Group pipeline).
 - stage: CheckPrerequisites
   displayName: "0 🔍 Vérification des pré-requis"
-  condition: ne('${{ parameters.action }}', 'destroy')
+  condition: and(ne('${{ parameters.action }}', 'destroy'), ne(variables['ACTION'], 'destroy'))
   jobs:
   - job: CheckRG
     pool:
@@ -111,7 +111,7 @@ stages:
 - stage: Validate
   displayName: "1 ✅ Validation Terraform"
   dependsOn: CheckPrerequisites
-  condition: ne('${{ parameters.action }}', 'destroy')
+  condition: and(ne('${{ parameters.action }}', 'destroy'), ne(variables['ACTION'], 'destroy'))
   jobs:
   - job: Validate
     pool:
@@ -137,7 +137,7 @@ stages:
 - stage: Plan
   displayName: "2 📋 Terraform Plan"
   dependsOn: Validate
-  condition: ne('${{ parameters.action }}', 'destroy')
+  condition: and(ne('${{ parameters.action }}', 'destroy'), ne(variables['ACTION'], 'destroy'))
   jobs:
   - job: Plan
     pool:
@@ -216,7 +216,7 @@ stages:
 - stage: Apply
   displayName: "3 🚀 Terraform Apply"
   dependsOn: Plan
-  condition: and(succeeded(), ne('${{ parameters.action }}', 'plan'), ne('${{ parameters.action }}', 'destroy'))
+  condition: and(succeeded(), ne('${{ parameters.action }}', 'plan'), ne('${{ parameters.action }}', 'destroy'), ne(variables['ACTION'], 'destroy'))
   jobs:
   - deployment: Apply
     environment: "azure-pfe"
@@ -278,7 +278,7 @@ stages:
 - stage: Destroy
   displayName: "4 🗑️ Terraform Destroy"
   dependsOn: []
-  condition: eq('${{ parameters.action }}', 'destroy')
+  condition: or(eq('${{ parameters.action }}', 'destroy'), eq(variables['ACTION'], 'destroy'))
   jobs:
   - deployment: Destroy
     environment: "azure-pfe"

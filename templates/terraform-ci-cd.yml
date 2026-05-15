@@ -67,6 +67,7 @@ stages:
 # Toujours présent. Si check_rg_exists=false, il s'exécute vide (Resource Group pipeline).
 - stage: CheckPrerequisites
   displayName: "0 🔍 Vérification des pré-requis"
+  condition: ne('${{ parameters.action }}', 'destroy')
   jobs:
   - job: CheckRG
     pool:
@@ -110,6 +111,7 @@ stages:
 - stage: Validate
   displayName: "1 ✅ Validation Terraform"
   dependsOn: CheckPrerequisites
+  condition: ne('${{ parameters.action }}', 'destroy')
   jobs:
   - job: Validate
     pool:
@@ -135,6 +137,7 @@ stages:
 - stage: Plan
   displayName: "2 📋 Terraform Plan"
   dependsOn: Validate
+  condition: ne('${{ parameters.action }}', 'destroy')
   jobs:
   - job: Plan
     pool:

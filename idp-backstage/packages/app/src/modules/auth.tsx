@@ -1,6 +1,7 @@
 import { createFrontendModule } from '@backstage/frontend-plugin-api';
 import { SignInPageBlueprint, SignInPageProps } from '@backstage/plugin-app-react';
 import { useApi, microsoftAuthApiRef } from '@backstage/core-plugin-api';
+import { UserIdentity } from '@backstage/core-components';
 
 import { useState } from 'react';
 import { makeStyles, Button, Typography, CircularProgress } from '@material-ui/core';
@@ -78,41 +79,34 @@ const CustomSignInPage = ({ onSignInSuccess }: SignInPageProps) => {
   const handleSignIn = async () => {
     setLoading(true);
     try {
-      // Trigger sign-in popup if necessary
       const identityResponse = await authApi.getBackstageIdentity({
         optional: false,
       });
-      
-      if (!identityResponse) {
-        throw new Error('Identity response is undefined');
+      const profile = await authApi.getProfile();
+
+      let identity = identityResponse?.identity;
+
+      if (!identity || !identity.userEntityRef) {
+        identity = {
+          type: 'user',
+          userEntityRef: 'user:default/guest',
+          ownershipEntityRefs: ['user:default/guest'],
+        };
       }
 
-      onSignInSuccess({
-        getProfileInfo: async () => {
-          const profile = await authApi.getProfile();
-          if (!profile) throw new Error('Profile is undefined');
-          return profile;
-        },
-        getBackstageIdentity: async () => {
-          const res = await authApi.getBackstageIdentity({ optional: false });
-          if (!res || !res.identity || !res.identity.userEntityRef) {
-            return {
-              identity: {
-                type: 'user',
-                userEntityRef: 'user:default/guest',
-                ownershipEntityRefs: [],
-              },
-              token: res?.token || '',
-            };
-          }
-          return res as any;
-        },
-        getCredentials: async () => {
-          const res = await authApi.getBackstageIdentity({ optional: true });
-          return { token: res?.token };
-        },
-        signOut: async () => authApi.signOut(),
+      if (!identity.ownershipEntityRefs) {
+        identity.ownershipEntityRefs = [identity.userEntityRef];
+      }
+
+      identity.ownershipEntityRefs = identity.ownershipEntityRefs.filter(Boolean);
+
+      const identityApi = UserIdentity.create({
+        identity,
+        authApi,
+        profile,
       });
+
+      onSignInSuccess(identityApi);
     } catch (error) {
       console.error('Sign-in failed', error);
       setLoading(false);

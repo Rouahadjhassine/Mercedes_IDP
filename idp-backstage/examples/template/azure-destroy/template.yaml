@@ -54,8 +54,8 @@ spec:
         organization: "ymi0337"
         project: ${{ steps['fetch-entity'].output.entity.metadata.annotations['dev.azure.com/project'] }}
         repo: ${{ steps['fetch-entity'].output.entity.metadata.annotations['dev.azure.com/repo'] }}
-        # Le nom du pipeline est conventionnel: pipeline-[repo]
-        pipelineName: pipeline-${{ steps['fetch-entity'].output.entity.metadata.annotations['dev.azure.com/repo'] }}
+        # Le nom du pipeline est stocké comme annotation au moment de la création
+        pipelineName: ${{ steps['fetch-entity'].output.entity.metadata.annotations['dev.azure.com/pipeline-name'] }}
         yamlPath: ${{ steps['fetch-entity'].output.entity.metadata.annotations['dev.azure.com/pipeline-file'] }}
         templateParameters:
           action: destroy

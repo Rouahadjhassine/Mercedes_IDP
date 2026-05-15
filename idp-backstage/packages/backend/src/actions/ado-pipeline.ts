@@ -16,9 +16,9 @@ export const adoPipelineModule = createBackendModule({
               input: (z) => z.object({
                 organization: z.string(),
                 project: z.string(),
-                repo: z.string(),
+                repo: z.string().optional(),
                 pipelineName: z.string(),
-                yamlPath: z.string(),
+                yamlPath: z.string().optional(),
                 templateParameters: z.record(z.unknown()).optional(),
               }),
               output: (z) => z.object({
@@ -29,6 +29,19 @@ export const adoPipelineModule = createBackendModule({
             async handler(ctx) {
               const { organization, project, repo, pipelineName, yamlPath, templateParameters } = ctx.input;
               ctx.logger.info(`Starting ADO Pipeline Automation for ${pipelineName}`);
+
+              if (!repo) {
+                throw new Error(
+                  `Missing required input 'repo'. The entity is missing the annotation 'dev.azure.com/repo'. ` +
+                  `Re-register the resource from its Backstage template to add this annotation.`
+                );
+              }
+              if (!yamlPath) {
+                throw new Error(
+                  `Missing required input 'yamlPath'. The entity is missing the annotation 'dev.azure.com/pipeline-file'. ` +
+                  `Re-register the resource from its Backstage template to add this annotation.`
+                );
+              }
 
               const token = process.env.AZURE_TOKEN;
               if (!token) {

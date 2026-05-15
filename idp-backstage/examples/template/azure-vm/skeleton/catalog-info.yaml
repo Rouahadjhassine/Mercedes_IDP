@@ -8,6 +8,7 @@ metadata:
     dev.azure.com/project: "${{ values.ado_project }}"
     dev.azure.com/project-repo: "${{ values.ado_project }}/${{ values.repo_name }}"
     dev.azure.com/repo: "${{ values.repo_name }}"
+    dev.azure.com/pipeline-name: "pipeline-vm-${{ values.repo_name }}"
     dev.azure.com/pipeline-file: "pipeline-vm.yml"
     azure.com/resource-type: "virtual-machine"
     azure.com/rg-name: "${{ values.resource_group_name }}"

@@ -93,7 +93,20 @@ const CustomSignInPage = ({ onSignInSuccess }: SignInPageProps) => {
           if (!profile) throw new Error('Profile is undefined');
           return profile;
         },
-        getBackstageIdentity: async () => authApi.getBackstageIdentity({ optional: false }) as any,
+        getBackstageIdentity: async () => {
+          const res = await authApi.getBackstageIdentity({ optional: false });
+          if (!res || !res.identity || !res.identity.userEntityRef) {
+            return {
+              identity: {
+                type: 'user',
+                userEntityRef: 'user:default/guest',
+                ownershipEntityRefs: [],
+              },
+              token: res?.token || '',
+            };
+          }
+          return res as any;
+        },
         getCredentials: async () => {
           const res = await authApi.getBackstageIdentity({ optional: true });
           return { token: res?.token };

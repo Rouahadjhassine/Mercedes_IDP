@@ -4,8 +4,8 @@ metadata:
   name: azure-key-vault
   title: "🔐 Azure Key Vault"
   description: >
-    Crée un Azure Key Vault pour gérer vos secrets, clés et certificats.
-    ⚠️ Prérequis : un Resource Group doit exister. Un Storage Account peut également être lié (optionnel).
+    Creates an Azure Key Vault to manage your secrets, keys, and certificates.
+    ⚠️ Prerequisite: A Resource Group must exist. A Storage Account can also be linked (optional).
   tags:
     - azure
     - terraform
@@ -14,7 +14,7 @@ metadata:
     - depends-on-rg
   links:
     - url: https://portal.azure.com/#create/Microsoft.KeyVault-ARM
-      title: Voir sur Azure Portal
+      title: View on Azure Portal
       icon: web
 spec:
   owner: user:guest
@@ -23,16 +23,16 @@ spec:
   parameters:
 
     # ── STEP 1 : INFOS DU COMPOSANT ──────────────────────────
-    - title: "📋 Informations du composant"
+    - title: "📋 Component Information"
       required:
         - owner
       properties:
         description:
           title: Description
           type: string
-          description: "Objectif de ce Key Vault (ex: Stockage des secrets de l'environnement de dev)"
+          description: "Purpose of this Key Vault (ex: Storing secrets for the dev environment)"
         owner:
-          title: Équipe propriétaire
+          title: Owning Team
           type: string
           ui:field: OwnerPicker
           ui:options:
@@ -40,18 +40,18 @@ spec:
               kind: Group
 
     # ── STEP 2 : RESOURCE GROUP CIBLE ────────────────────────
-    - title: "📁 Entête et Identité"
+    - title: "📁 Header and Identity"
       description: >
-        Saisissez le nom exact du Resource Group (déjà créé) et le nom de votre futur Key Vault.
+        Enter the exact name of the Resource Group (already created) and the name of your future Key Vault.
       required:
         - resource_group_name
         - environment
         - key_vault_name
       properties:
         resource_group_name:
-          title: "📁 Nom du Resource Group"
+          title: "📁 Resource Group Name"
           type: string
-          description: "Sélectionnez le Resource Group"
+          description: "Select the Resource Group"
           ui:field: EntityPicker
           ui:options:
             catalogFilter:
@@ -60,9 +60,9 @@ spec:
             defaultKind: Component
             defaultNamespace: default
         environment:
-          title: "🌐 Environnement"
+          title: "🌐 Environment"
           type: string
-          description: "Cycle de vie du déploiement"
+          description: "Deployment lifecycle"
           default: dev
           enum:
             - dev
@@ -79,26 +79,26 @@ spec:
             - "🏖️ Sandbox"
             - "💡 Proof of Concept"
         key_vault_name:
-          title: "💎 Nom du Key Vault"
+          title: "💎 Key Vault Name"
           type: string
-          description: "Nom unique, alphanumérique et tirets (3–24 caractères)"
+          description: "Unique name, alphanumeric and dashes (3–24 characters)"
           maxLength: 24
           minLength: 3
 
     # ── STEP 3 : LIEN STORAGE ACCOUNT (optionnel) ────────────
-    - title: "💾 Lien Storage Account (optionnel)"
+    - title: "💾 Link Storage Account (optional)"
       description: >
-        Liez un Storage Account existant pour stocker automatiquement son nom
-        comme secret dans votre Key Vault. Sélectionnez-en un dans votre catalogue.
+        Link an existing Storage Account to automatically store its name
+        as a secret in your Key Vault. Select one from your catalog.
       properties:
         link_storage:
-          title: "🔗 Lier au Storage Account existant ?"
+          title: "🔗 Link to existing Storage Account?"
           type: boolean
           default: true
         existing_storage:
-          title: "💾 Sélectionner un Storage Account existant"
+          title: "💾 Select an existing Storage Account"
           type: string
-          description: "Sélectionnez le Storage Account à lier (son nom sera stocké comme secret dans le KV)"
+          description: "Select the Storage Account to link (its name will be stored as a secret in the KV)"
           ui:field: EntityPicker
           ui:options:
             catalogFilter:
@@ -107,20 +107,20 @@ spec:
             defaultKind: Component
             defaultNamespace: default
         link_storage_account_name:
-          title: "📦 Nom du Storage Account lié"
+          title: "📦 Linked Storage Account Name"
           type: string
-          description: "Saisissez le nom exact du Storage Account pour enregistrer son nom comme secret. Laissez vide sinon."
+          description: "Enter the exact name of the Storage Account to save its name as a secret. Leave empty otherwise."
 
     # ── STEP 4 : BASICS (onglet Basics du portail) ───────────
-    - title: "⚙️ Basics — Configuration Key Vault"
+    - title: "⚙️ Basics — Key Vault Configuration"
       required:
         - location
         - keyvault_sku
       properties:
         location:
-          title: "🌍 Région Azure"
+          title: "🌍 Azure Region"
           type: string
-          description: "Doit être la même région que votre Resource Group"
+          description: "Must be in the same region as your Resource Group"
           default: "West Europe"
           enum:
             - "West Europe"
@@ -147,7 +147,7 @@ spec:
             - "standard"
             - "premium"
           enumNames:
-            - "Standard — Usage général, secrets/clés/certificats"
+            - "Standard — General purpose, secrets/keys/certificates"
             - "Premium — + HSM (Hardware Security Module)"
         keyvault_retention_days:
           title: "🗓️ Soft Delete retention (jours)"
@@ -162,33 +162,33 @@ spec:
 
     # ── STEP 5 : ACCESS CONFIGURATION ────────────────────────
     - title: "🔒 Access Configuration"
-      description: "Configurez les permissions d'accès au Key Vault"
+      description: "Configure Key Vault access permissions"
       properties:
         keyvault_purge_protection:
           title: "🔒 Purge Protection"
           type: boolean
           default: false
-          description: "Recommandé pour la production. Empêche la suppression définitive."
+          description: "Recommended for production. Prevents permanent deletion."
         keyvault_disk_encryption:
-          title: "💿 Autoriser Azure Disk Encryption"
+          title: "💿 Allow Azure Disk Encryption"
           type: boolean
           default: true
         keyvault_deployment:
-          title: "🚀 Autoriser Azure Deployment (pour les VMs)"
+          title: "🚀 Allow Azure Deployment (for VMs)"
           type: boolean
           default: true
 
     # ── STEP 6 : SECRETS ──────────────────────────────────────
-    - title: "🔑 Secrets automatiques"
+    - title: "🔑 Automatic Secrets"
       properties:
         store_vm_password:
-          title: "🔑 Stocker le mot de passe admin VM dans le KV"
+          title: "🔑 Store VM admin password in the KV"
           type: boolean
           default: true
-          description: "Si activé, le mot de passe admin VM sera stocké comme secret dans ce Key Vault"
+          description: "If enabled, the VM admin password will be stored as a secret in this Key Vault"
 
     # ── STEP 7 : TAGS ─────────────────────────────────────────
-    - title: "🏷️ Tags Azure"
+    - title: "🏷️ Azure Tags"
       properties:
         tag_owner:
           title: Owner
@@ -233,29 +233,29 @@ spec:
             - "Restricted"
 
     # ── STEP 8 : DESTINATION ADO ──────────────────────────────
-    - title: "🚀 Destination Azure DevOps"
+    - title: "🚀 Azure DevOps Destination"
       required:
         - ado_org
         - ado_project
         - repo_name
       properties:
         ado_org:
-          title: Organisation Azure DevOps
+          title: Azure DevOps Organization
           type: string
           default: "ymi0337"
         ado_project:
-          title: Projet Azure DevOps
+          title: Azure DevOps Project
           type: string
           default: "IDP-MIC"
         repo_name:
-          title: Nom du Repository (nouveau)
+          title: Repository Name (new)
           type: string
           default: "infra-key-vault"
 
   steps:
 
     - id: fetch-base
-      name: "📦 Génération du pipeline"
+      name: "📦 Generating Pipeline"
       action: fetch:template
       input:
         url: ./skeleton
@@ -286,22 +286,22 @@ spec:
           - "pipeline-*.yml"
 
     - id: publish
-      name: "📤 Publication sur Azure DevOps"
+      name: "📤 Publishing to Azure DevOps"
       action: publish:azure
       input:
         repoUrl: "dev.azure.com?organization=${{ parameters.ado_org }}&project=${{ parameters.ado_project }}&repo=${{ parameters.repo_name }}"
-        description: "🔐 Key Vault – dans ${{ parameters.resource_group_name | parseEntityRef | pick('name') }}"
+        description: "🔐 Key Vault – in ${{ parameters.resource_group_name | parseEntityRef | pick('name') }}"
         defaultBranch: main
 
     - id: register
-      name: "📝 Enregistrement dans le Catalog"
+      name: "📝 Registering in Catalog"
       action: catalog:register
       input:
         repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
         catalogInfoPath: "/catalog-info.yaml"
 
     - id: run-pipeline
-      name: "⚙️ Lancement automatique du Pipeline (Zero-Click) !"
+      name: "⚙️ Automatic Pipeline Launch (Zero-Click)!"
       action: ado:pipeline:run
       input:
         organization: ${{ parameters.ado_org }}
@@ -330,16 +330,16 @@ spec:
 
   output:
     links:
-      - title: "📁 Repository Azure DevOps"
+      - title: "📁 Azure DevOps Repository"
         url: ${{ steps['publish'].output.remoteUrl }}
-      - title: "🔍 Voir dans le Catalog Backstage"
+      - title: "🔍 View in Backstage Catalog"
         icon: catalog
         entityRef: ${{ steps['register'].output.entityRef }}
-      - title: "▶️ Voir l'exécution du Pipeline"
+      - title: "▶️ View Pipeline Execution"
         url: ${{ steps['run-pipeline'].output.pipelineRunUrl }}
     text:
-      - title: "✅ Déploiement en cours"
+      - title: "✅ Deployment in Progress"
         content: |
-          ### Votre infrastructure est en train d'être créée !
+          ### Your infrastructure is being created!
           
-          Backstage a déclenché le pipeline d'infrastructure (`${{ steps['run-pipeline'].output.pipelineId }}`) automatiquement pour vous.
+          Backstage has automatically triggered the infrastructure pipeline (`${{ steps['run-pipeline'].output.pipelineId }}`) for you.

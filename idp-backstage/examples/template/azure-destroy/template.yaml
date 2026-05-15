@@ -12,7 +12,7 @@ metadata:
     - admin
   links:
     - url: https://portal.azure.com
-      title: Voir sur Azure Portal
+      title: View on Azure Portal
       icon: web
 spec:
   owner: user:guest
@@ -62,7 +62,7 @@ spec:
 
   output:
     links:
-      - title: "▶️ Voir l'exécution du Pipeline de destruction"
+      - title: "▶️ View Pipeline Execution de destruction"
         url: ${{ steps['run-destroy-pipeline'].output.pipelineRunUrl }}
     text:
       - title: "💣 Suppression en cours"

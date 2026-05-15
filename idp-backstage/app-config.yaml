@@ -1,5 +1,5 @@
 app:
-  title: Scaffolded Backstage App
+  title: Mercedes-Benz IDP
   baseUrl: http://localhost:3000
 
   # Enable all packages by default, this will discover packages from packages/app/package.json
@@ -118,26 +118,26 @@ catalog:
       rules:
         - allow: [Template]
 
-    # ── MARKETPLACE IDP – Templates Azure Indépendants ──────────────────
-    # 🏗️ Template 1 – Resource Group (fondation, aucune dépendance)
+    # ── MARKETPLACE IDP – Independent Azure Templates ──────────────────
+    # 🏗️ Template 1 – Resource Group (foundation, no dependencies)
     - type: file
       target: ../../examples/template/azure-resource-group/template.yaml
       rules:
         - allow: [Template]
 
-    # 💾 Template 2 – Storage Account (dépend d'un Resource Group)
+    # 💾 Template 2 – Storage Account (depends on a Resource Group)
     - type: file
       target: ../../examples/template/azure-storage/template.yaml
       rules:
         - allow: [Template]
 
-    # 🔐 Template 3 – Key Vault (dépend d'un RG, peut lier un Storage)
+    # 🔐 Template 3 – Key Vault (depends on a RG, can link a Storage)
     - type: file
       target: ../../examples/template/azure-keyvault/template.yaml
       rules:
         - allow: [Template]
 
-    # 💻 Template 4 – Virtual Machine (dépend d'un Resource Group)
+    # 💻 Template 4 – Virtual Machine (depends on a Resource Group)
     - type: file
       target: ../../examples/template/azure-vm/template.yaml
       rules:
@@ -149,7 +149,7 @@ catalog:
       rules:
         - allow: [Template]
 
-    # [DÉSACTIVÉ] Ancien Golden Path généraliste (remplacé par la marketplace)
+    # [DISABLED] Old General Golden Path (replaced by the marketplace)
     # - type: file
     #   target: ../../examples/template/azure-golden-path/template.yaml
     #   rules:

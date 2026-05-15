@@ -5,7 +5,7 @@ metadata:
   title: "💻 Azure Virtual Machine"
   description: >
     Crée une Machine Virtuelle Azure (Windows ou Linux).
-    ⚠️ Prérequis : un Resource Group doit exister au préalable.
+    ⚠️ Prerequisite: A Resource Group must already exist.
     Saisissez le nom du Resource Group exact et le nom de votre future VM.
   tags:
     - azure
@@ -15,7 +15,7 @@ metadata:
     - depends-on-rg
   links:
     - url: https://portal.azure.com/#create/Microsoft.VirtualMachine-ARM
-      title: Voir sur Azure Portal
+      title: View on Azure Portal
       icon: web
 spec:
   owner: user:guest
@@ -24,7 +24,7 @@ spec:
   parameters:
 
     # ── STEP 1 : INFOS DU COMPOSANT ──────────────────────────
-    - title: "📋 Informations du composant"
+    - title: "📋 Component Information"
       required:
         - owner
       properties:
@@ -33,7 +33,7 @@ spec:
           type: string
           description: "Rôle de cette VM (ex: Serveur web de développement)"
         owner:
-          title: Équipe propriétaire
+          title: Owning Team
           type: string
           ui:field: OwnerPicker
           ui:options:
@@ -41,7 +41,7 @@ spec:
               kind: Group
 
     # ── STEP 2 : RESOURCE GROUP CIBLE ────────────────────────
-    - title: "📁 Entête et Identité"
+    - title: "📁 Header and Identity"
       description: >
         Saisissez le nom exact du Resource Group (déjà créé) et le nom de votre future Machine Virtuelle.
       required:
@@ -50,9 +50,9 @@ spec:
         - vm_name
       properties:
         resource_group_name:
-          title: "📁 Nom du Resource Group"
+          title: "📁 Resource Group Name"
           type: string
-          description: "Sélectionnez le Resource Group"
+          description: "Select the Resource Group"
           ui:field: EntityPicker
           ui:options:
             catalogFilter:
@@ -61,9 +61,9 @@ spec:
             defaultKind: Component
             defaultNamespace: default
         environment:
-          title: "🌐 Environnement"
+          title: "🌐 Environment"
           type: string
-          description: "Cycle de vie du déploiement"
+          description: "Deployment lifecycle"
           default: dev
           enum:
             - dev
@@ -92,9 +92,9 @@ spec:
         - vm_count
       properties:
         location:
-          title: "🌍 Région Azure"
+          title: "🌍 Azure Region"
           type: string
-          description: "Doit être la même région que votre Resource Group"
+          description: "Must be in the same region as your Resource Group"
           default: "West Europe"
           enum:
             - "West Europe"
@@ -195,7 +195,7 @@ spec:
     - title: "💾 Disks — Stockage OS"
       properties:
         vm_disk_type:
-          title: "💾 Type de disque OS"
+          title: "💾 OS Disk Type"
           type: string
           default: "Standard_LRS"
           enum:
@@ -210,7 +210,7 @@ spec:
             - "Ultra SSD — Performances extrêmes"
 
     # ── STEP 7 : TAGS ─────────────────────────────────────────
-    - title: "🏷️ Tags Azure"
+    - title: "🏷️ Azure Tags"
       properties:
         tag_owner:
           title: Owner
@@ -246,29 +246,29 @@ spec:
             - "Critical"
 
     # ── STEP 8 : DESTINATION ADO ──────────────────────────────
-    - title: "🚀 Destination Azure DevOps"
+    - title: "🚀 Azure DevOps Destination"
       required:
         - ado_org
         - ado_project
         - repo_name
       properties:
         ado_org:
-          title: Organisation Azure DevOps
+          title: Azure DevOps Organization
           type: string
           default: "ymi0337"
         ado_project:
-          title: Projet Azure DevOps
+          title: Azure DevOps Project
           type: string
           default: "IDP-MIC"
         repo_name:
-          title: Nom du Repository (nouveau)
+          title: Repository Name (new)
           type: string
           default: "infra-virtual-machine"
 
   steps:
 
     - id: fetch-base
-      name: "📦 Génération du pipeline"
+      name: "📦 Generating Pipeline"
       action: fetch:template
       input:
         url: ./skeleton
@@ -294,22 +294,22 @@ spec:
           - "pipeline-*.yml"
 
     - id: publish
-      name: "📤 Publication sur Azure DevOps"
+      name: "📤 Publishing to Azure DevOps"
       action: publish:azure
       input:
         repoUrl: "dev.azure.com?organization=${{ parameters.ado_org }}&project=${{ parameters.ado_project }}&repo=${{ parameters.repo_name }}"
-        description: "💻 Virtual Machine – dans ${{ parameters.resource_group_name | parseEntityRef | pick('name') }}"
+        description: "💻 Virtual Machine – in ${{ parameters.resource_group_name | parseEntityRef | pick('name') }}"
         defaultBranch: main
 
     - id: register
-      name: "📝 Enregistrement dans le Catalog"
+      name: "📝 Registering in Catalog"
       action: catalog:register
       input:
         repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
         catalogInfoPath: "/catalog-info.yaml"
 
     - id: run-pipeline
-      name: "⚙️ Lancement automatique du Pipeline (Zero-Click) !"
+      name: "⚙️ Automatic Pipeline Launch (Zero-Click)!"
       action: ado:pipeline:run
       input:
         organization: ${{ parameters.ado_org }}
@@ -334,16 +334,16 @@ spec:
 
   output:
     links:
-      - title: "📁 Repository Azure DevOps"
+      - title: "📁 Azure DevOps Repository"
         url: ${{ steps['publish'].output.remoteUrl }}
-      - title: "🔍 Voir dans le Catalog Backstage"
+      - title: "🔍 View in Backstage Catalog"
         icon: catalog
         entityRef: ${{ steps['register'].output.entityRef }}
-      - title: "▶️ Voir l'exécution du Pipeline"
+      - title: "▶️ View Pipeline Execution"
         url: ${{ steps['run-pipeline'].output.pipelineRunUrl }}
     text:
-      - title: "✅ Déploiement en cours"
+      - title: "✅ Deployment in Progress"
         content: |
-          ### Votre infrastructure est en train d'être créée !
+          ### Your infrastructure is being created!
           
-          Backstage a déclenché le pipeline d'infrastructure (`${{ steps['run-pipeline'].output.pipelineId }}`) automatiquement pour vous.
+          Backstage has automatically triggered the infrastructure pipeline (`${{ steps['run-pipeline'].output.pipelineId }}`) for you.

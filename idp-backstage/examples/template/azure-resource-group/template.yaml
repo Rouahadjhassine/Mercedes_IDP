@@ -4,8 +4,8 @@ metadata:
   name: azure-resource-group
   title: "🏗️ Azure Resource Group"
   description: >
-    Crée un Resource Group Azure — le conteneur logique de toutes vos ressources.
-    C'est la première étape obligatoire avant de déployer un Storage, un Key Vault ou une VM.
+    Creates an Azure Resource Group — the logical container for all your resources.
+    This is the mandatory first step before deploying Storage, Key Vault, or VM.
   tags:
     - azure
     - terraform
@@ -13,7 +13,7 @@ metadata:
     - foundation
   links:
     - url: https://portal.azure.com/#create/Microsoft.ResourceGroup
-      title: Voir sur Azure Portal
+      title: View on Azure Portal
       icon: web
 spec:
   owner: user:guest
@@ -22,16 +22,16 @@ spec:
   parameters:
 
     # ── STEP 1 : INFOS DU COMPOSANT ──────────────────────────
-    - title: "📋 Informations du composant"
+    - title: "📋 Component Information"
       required:
         - owner
       properties:
         description:
           title: Description
           type: string
-          description: "Objectif de ce Resource Group (ex: Environnement de développement IDP)"
+          description: "Purpose of this Resource Group (ex: Environnement de développement IDP)"
         owner:
-          title: Équipe propriétaire
+          title: Owning Team
           type: string
           ui:field: OwnerPicker
           ui:options:
@@ -39,24 +39,24 @@ spec:
               kind: Group
 
     # ── STEP 2 : CONFIGURATION AZURE ─────────────────────────
-    - title: "⚙️ Configuration Azure"
+    - title: "⚙️ Azure Configuration"
       description: >
-        Définissez le nom de votre Resource Group et sa région. Le nom doit être unique et descriptif.
+        Define your Resource Group name and its region. The name must be unique and descriptive.
       required:
         - resource_group_name
         - environment
         - location
       properties:
         resource_group_name:
-          title: "🏷️ Nom du Resource Group"
+          title: "🏷️ Resource Group Name"
           type: string
-          description: "Le nom de votre Resource Group (ex: my-project-rg-dev)"
+          description: "Your Resource Group Name (e.g. my-project-rg-dev)"
           maxLength: 90
           minLength: 2
         environment:
-          title: "🌐 Environnement"
+          title: "🌐 Environment"
           type: string
-          description: "Cycle de vie du déploiement"
+          description: "Deployment lifecycle"
           default: dev
           enum:
             - dev
@@ -73,9 +73,9 @@ spec:
             - "🏖️ Sandbox"
             - "💡 Proof of Concept"
         location:
-          title: "🌍 Région Azure"
+          title: "🌍 Azure Region"
           type: string
-          description: "Région où le Resource Group sera créé"
+          description: "Region where the Resource Group will be created"
           default: "West Europe"
           enum:
             - "West Europe"
@@ -97,8 +97,8 @@ spec:
             - "Japan East"
 
     # ── STEP 3 : TAGS ─────────────────────────────────────────
-    - title: "🏷️ Tags Azure"
-      description: "Les tags permettent d'organiser, filtrer et facturer vos ressources"
+    - title: "🏷️ Azure Tags"
+      description: "Tags help organize, filter, and bill your resources"
       properties:
         tag_owner:
           title: Owner
@@ -162,30 +162,30 @@ spec:
             - "Restricted"
 
     # ── STEP 4 : DESTINATION ADO ──────────────────────────────
-    - title: "🚀 Destination Azure DevOps"
+    - title: "🚀 Azure DevOps Destination"
       required:
         - ado_org
         - ado_project
         - repo_name
       properties:
         ado_org:
-          title: Organisation Azure DevOps
+          title: Azure DevOps Organization
           type: string
           default: "ymi0337"
         ado_project:
-          title: Projet Azure DevOps
+          title: Azure DevOps Project
           type: string
           default: "IDP-MIC"
         repo_name:
-          title: Nom du Repository (nouveau)
+          title: Repository Name (new)
           type: string
-          description: "Un nouveau repo sera créé avec ce nom dans Azure DevOps"
+          description: "A new repo will be created with this name in Azure DevOps"
           default: "infra-resource-group"
 
   steps:
 
     - id: fetch-base
-      name: "📦 Génération du pipeline"
+      name: "📦 Generating Pipeline"
       action: fetch:template
       input:
         url: ./skeleton
@@ -208,7 +208,7 @@ spec:
           - "pipeline-*.yml"
 
     - id: publish
-      name: "📤 Publication sur Azure DevOps"
+      name: "📤 Publishing to Azure DevOps"
       action: publish:azure
       input:
         repoUrl: "dev.azure.com?organization=${{ parameters.ado_org }}&project=${{ parameters.ado_project }}&repo=${{ parameters.repo_name }}"
@@ -216,14 +216,14 @@ spec:
         defaultBranch: main
 
     - id: register
-      name: "📝 Enregistrement dans le Catalog"
+      name: "📝 Registering in Catalog"
       action: catalog:register
       input:
         repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
         catalogInfoPath: "/catalog-info.yaml"
 
     - id: run-pipeline
-      name: "⚙️ Lancement automatique du Pipeline (Zero-Click) !"
+      name: "⚙️ Automatic Pipeline Launch (Zero-Click)!"
       action: ado:pipeline:run
       input:
         organization: ${{ parameters.ado_org }}
@@ -245,19 +245,19 @@ spec:
 
   output:
     links:
-      - title: "📁 Repository Azure DevOps"
+      - title: "📁 Azure DevOps Repository"
         url: ${{ steps['publish'].output.remoteUrl }}
-      - title: "🔍 Voir dans le Catalog Backstage"
+      - title: "🔍 View in Backstage Catalog"
         icon: catalog
         entityRef: ${{ steps['register'].output.entityRef }}
-      - title: "▶️ Voir l'exécution du Pipeline"
+      - title: "▶️ View Pipeline Execution"
         url: ${{ steps['run-pipeline'].output.pipelineRunUrl }}
     text:
-      - title: "✅ Déploiement en cours"
+      - title: "✅ Deployment in Progress"
         content: |
-          ### Votre infrastructure est en train d'être créée !
+          ### Your infrastructure is being created!
           
-          Backstage a déclenché le pipeline d'infrastructure (`${{ steps['run-pipeline'].output.pipelineId }}`) automatiquement pour vous.
+          Backstage has automatically triggered the infrastructure pipeline (`${{ steps['run-pipeline'].output.pipelineId }}`) for you.
           
-          > 💡 Notez votre nom de Resource Group (`${{ parameters.resource_group_name }}`).
-          > Vous en aurez besoin pour créer un Storage, Key Vault ou VM dans ce Resource Group.
+          > 💡 Note your Resource Group name (`${{ parameters.resource_group_name }}`).
+          > You will need it to create a Storage, Key Vault, or VM in this Resource Group.

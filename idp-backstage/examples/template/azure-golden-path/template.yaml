@@ -54,9 +54,9 @@ spec:
           title: Nom du Resource Group
           type: string
         environment:
-          title: "🌐 Environnement"
+          title: "🌐 Environment"
           type: string
-          description: "Cycle de vie du déploiement"
+          description: "Deployment lifecycle"
           default: dev
           enum:
             - dev
@@ -152,10 +152,10 @@ spec:
         - repo_name
       properties:
         ado_org:
-          title: Organisation Azure DevOps
+          title: Azure DevOps Organization
           type: string
         ado_project:
-          title: Projet Azure DevOps
+          title: Azure DevOps Project
           type: string
         repo_name:
           title: Nom du nouveau Repository
@@ -289,7 +289,7 @@ spec:
       - title: "▶️ Pipeline – Virtual Machine"
         url: ${{ steps['run-pipeline-vm'].output.pipelineRunUrl }}
     text:
-      - title: "✅ Déploiement en cours"
+      - title: "✅ Deployment in Progress"
         content: |
           ### Votre infrastructure est en cours de création !
 

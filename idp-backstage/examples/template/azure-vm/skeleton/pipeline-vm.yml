@@ -92,12 +92,12 @@ resources:
 stages:
 - template: templates/terraform-ci-cd.yml@IDP-MIC
   parameters:
-    action: ${{ parameters.action }}
+    action: ${{ "${{" }} parameters.action ${{ "}}" }}
     service_connection: 'MIC-IDP'
     tf_working_dir: 'pipelines/vm'
     tfstate_key_prefix: 'vm'
-    resource_group_name: ${{ parameters.resource_group_name }}
-    resource_name: ${{ parameters.vm_name }}
+    resource_group_name: ${{ "${{" }} parameters.resource_group_name ${{ "}}" }}
+    resource_name: ${{ "${{" }} parameters.vm_name ${{ "}}" }}
     bs_resource_name_var: 'BS_VM_NAME'
     check_rg_exists: true
     vm_admin_password_secret: $(VM_ADMIN_PASSWORD)

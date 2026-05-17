@@ -95,12 +95,12 @@ resources:
 stages:
 - template: templates/terraform-ci-cd.yml@IDP-MIC
   parameters:
-    action: ${{ parameters.action }}
+    action: ${{ "${{" }} parameters.action ${{ "}}" }}
     service_connection: 'MIC-IDP'
     tf_working_dir: 'pipelines/storage'
     tfstate_key_prefix: 'storage'
-    resource_group_name: ${{ parameters.resource_group_name }}
-    resource_name: ${{ parameters.storage_account_name }}
+    resource_group_name: ${{ "${{" }} parameters.resource_group_name ${{ "}}" }}
+    resource_name: ${{ "${{" }} parameters.storage_account_name ${{ "}}" }}
     bs_resource_name_var: 'BS_STORAGE_ACCOUNT_NAME'
     check_rg_exists: true
     tf_extra_vars: >-

@@ -83,20 +83,20 @@ resources:
 stages:
 - template: templates/terraform-ci-cd.yml@IDP-MIC
   parameters:
-    action: ${{ parameters.action }}
+    action: ${{ "${{" }} parameters.action ${{ "}}" }}
     service_connection: 'MIC-IDP'
     tf_working_dir: 'pipelines/resource-group'
     tfstate_key_prefix: 'rg'
-    resource_group_name: ${{ parameters.resource_group_name }}
-    resource_name: ${{ parameters.resource_group_name }}
+    resource_group_name: ${{ "${{" }} parameters.resource_group_name ${{ "}}" }}
+    resource_name: ${{ "${{" }} parameters.resource_group_name ${{ "}}" }}
     bs_resource_name_var: 'BS_RESOURCE_GROUP_NAME'
     check_rg_exists: false
     tf_extra_vars: >-
-      -var="location=${{ parameters.location }}"
-      -var="environment=${{ parameters.environment }}"
-      -var="owner=${{ parameters.tag_owner }}"
-      -var="tag_project=${{ parameters.tag_project }}"
-      -var="tag_cost_center=${{ parameters.tag_cost_center }}"
-      -var="tag_managed_by=${{ parameters.tag_managed_by }}"
-      -var="tag_criticality=${{ parameters.tag_criticality }}"
-      -var="tag_data_classification=${{ parameters.tag_data_classification }}"
+      -var="location=${{ "${{" }} parameters.location ${{ "}}" }}"
+      -var="environment=${{ "${{" }} parameters.environment ${{ "}}" }}"
+      -var="owner=${{ "${{" }} parameters.tag_owner ${{ "}}" }}"
+      -var="tag_project=${{ "${{" }} parameters.tag_project ${{ "}}" }}"
+      -var="tag_cost_center=${{ "${{" }} parameters.tag_cost_center ${{ "}}" }}"
+      -var="tag_managed_by=${{ "${{" }} parameters.tag_managed_by ${{ "}}" }}"
+      -var="tag_criticality=${{ "${{" }} parameters.tag_criticality ${{ "}}" }}"
+      -var="tag_data_classification=${{ "${{" }} parameters.tag_data_classification ${{ "}}" }}"

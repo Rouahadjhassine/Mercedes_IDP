@@ -116,12 +116,12 @@ resources:
 stages:
 - template: templates/terraform-ci-cd.yml@IDP-MIC
   parameters:
-    action: ${{ parameters.action }}
+    action: ${{ "${{" }} parameters.action ${{ "}}" }}
     service_connection: 'MIC-IDP'
     tf_working_dir: 'pipelines/keyvault'
     tfstate_key_prefix: 'kv'
-    resource_group_name: ${{ parameters.resource_group_name }}
-    resource_name: ${{ parameters.key_vault_name }}
+    resource_group_name: ${{ "${{" }} parameters.resource_group_name ${{ "}}" }}
+    resource_name: ${{ "${{" }} parameters.key_vault_name ${{ "}}" }}
     bs_resource_name_var: 'BS_KEY_VAULT_NAME'
     check_rg_exists: true
     vm_admin_password_secret: $(VM_ADMIN_PASSWORD)

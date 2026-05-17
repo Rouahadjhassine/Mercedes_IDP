@@ -334,9 +334,8 @@ stages:
                   -backend-config="storage_account_name=pfetfstate" \
                   -backend-config="container_name=tfstate" \
                   -backend-config="key=${{ parameters.tfstate_key_prefix }}-${TFSTATE_RESOURCE}.tfstate"
-                TF_EXTRA_VARS="${{ parameters.tf_extra_vars }}"
                 terraform destroy -auto-approve \
                   -var="subscription_id=${{ parameters.subscription_id }}" \
                   -var="resource_group_name=$RG_NAME" \
-                  ${TF_EXTRA_VARS}
+                  ${{ parameters.tf_extra_vars }}
                 echo "🗑️ Destroy terminé."

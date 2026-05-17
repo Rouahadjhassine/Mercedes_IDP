@@ -159,6 +159,7 @@ stages:
 # ── STAGE 0 : SETUP BACKEND (automatique, sans commandes manuelles) ──
 - stage: SetupBackend
   displayName: "0 🗄️ Préparer le backend Terraform"
+  condition: ne('${{ parameters.action }}', 'destroy')
   jobs:
   - job: CreateBackend
     pool:
@@ -220,6 +221,7 @@ stages:
 - stage: Validate
   displayName: "1 ✅ Validation"
   dependsOn: SetupBackend
+  condition: ne('${{ parameters.action }}', 'destroy')
   jobs:
   - job: Validate
     pool:
@@ -244,6 +246,7 @@ stages:
 - stage: Plan
   displayName: "2 📋 Plan (aperçu)"
   dependsOn: Validate
+  condition: ne('${{ parameters.action }}', 'destroy')
   jobs:
   - job: Plan
     pool:

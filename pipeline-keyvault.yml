@@ -193,6 +193,7 @@ stages:
 # ── STAGE 0 : VÉRIFICATION PRÉ-REQUIS ───────────────────────
 - stage: CheckPrerequisites
   displayName: "0 🔍 Vérifier les ressources liées"
+  condition: ne('${{ parameters.action }}', 'destroy')
   jobs:
   - job: CheckResources
     pool:
@@ -227,6 +228,7 @@ stages:
 - stage: Validate
   displayName: "1 ✅ Validation"
   dependsOn: CheckPrerequisites
+  condition: ne('${{ parameters.action }}', 'destroy')
   jobs:
   - job: Validate
     pool:
@@ -250,6 +252,7 @@ stages:
 - stage: Plan
   displayName: "2 📋 Plan (aperçu)"
   dependsOn: Validate
+  condition: ne('${{ parameters.action }}', 'destroy')
   jobs:
   - job: Plan
     pool:

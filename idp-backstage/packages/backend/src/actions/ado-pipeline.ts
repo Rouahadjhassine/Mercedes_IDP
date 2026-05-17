@@ -155,9 +155,6 @@ export const adoPipelineModule = createBackendModule({
                     }
                   },
                   templateParameters: stringParams,
-                  variables: {
-                    ACTION: { value: stringParams['action'] || 'apply' }
-                  }
                 }),
               });
 

@@ -21,9 +21,13 @@ trigger:
 pr: none
 
 variables:
-  IMAGE_NAME: "backstage"
-  IMAGE_TAG: "$(Build.BuildId)"
-  IMAGE_LATEST: "latest"
+  - group: backstage-acr-vars   # Library > Variable Groups > backstage-acr-vars
+  - name: IMAGE_NAME
+    value: "backstage"
+  - name: IMAGE_TAG
+    value: "$(Build.BuildId)"
+  - name: IMAGE_LATEST
+    value: "latest"
 
 stages:
 

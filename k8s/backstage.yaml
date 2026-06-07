@@ -1,0 +1,154 @@
+# ================================================================
+# Backstage IDP – Portail Développeur
+# Image Docker construite par le pipeline Azure DevOps (CI)
+# et déployée ici via ArgoCD (CD / GitOps)
+#
+# ⚠️  AVANT DE DÉPLOYER : remplacez <VOTRE_ACR> par le nom de
+#     votre Azure Container Registry dans la ligne `image:`.
+# ================================================================
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backstage
+  namespace: idp-backstage
+  labels:
+    app: backstage
+    tier: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backstage
+  template:
+    metadata:
+      labels:
+        app: backstage
+        tier: frontend
+    spec:
+      # ── Secret pour accéder à l'ACR privé (idpmic.azurecr.io)
+      imagePullSecrets:
+        - name: acr-secret
+
+      # ── Attend que PostgreSQL soit prêt avant de démarrer Backstage
+      initContainers:
+        - name: wait-for-postgres
+          image: postgres:15-alpine
+          command:
+            - sh
+            - -c
+            - |
+              until pg_isready -h postgres -U backstage -d backstage; do
+                echo "En attente de PostgreSQL...";
+                sleep 3;
+              done;
+              echo "PostgreSQL est prêt !";
+          env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: backstage-secrets
+                  key: postgres-password
+
+      containers:
+        - name: backstage
+          # ⚠️  Remplacez par l'URL complète de votre image ACR
+          # Exemple : idpmic.azurecr.io/backstage:latest
+          image: idpmic.azurecr.io/backstage:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 7007
+              name: http
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: NODE_OPTIONS
+              value: "--no-node-snapshot"
+
+            # ── URL publique de l'application
+            # ⚠️ Mettez à jour cette valeur avec l'IP publique du LoadBalancer après déploiement
+            # Récupérez l'IP via : kubectl get svc backstage -n idp-backstage
+            - name: APP_BASE_URL
+              value: "http://localhost"   # ← À remplacer par l'EXTERNAL-IP du LoadBalancer
+
+            # ── PostgreSQL
+            - name: POSTGRES_HOST
+              value: postgres          # Nom du Service K8s PostgreSQL
+            - name: POSTGRES_PORT
+              value: "5432"
+            - name: POSTGRES_USER
+              value: backstage
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: backstage-secrets
+                  key: postgres-password
+
+            # ── Authentification SSO Microsoft (Entra ID / Azure AD)
+            - name: AZURE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: backstage-secrets
+                  key: azure-client-id
+            - name: AZURE_TENANT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: backstage-secrets
+                  key: azure-tenant-id
+            - name: AZURE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: backstage-secrets
+                  key: azure-client-secret
+
+            # ── Intégrations Azure DevOps et GitHub
+            - name: AZURE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: backstage-secrets
+                  key: azure-token
+            - name: GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: backstage-secrets
+                  key: github-token
+
+          # Vérifie que Backstage répond avant de router le trafic
+          livenessProbe:
+            httpGet:
+              path: /healthcheck
+              port: 7007
+            initialDelaySeconds: 60
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /healthcheck
+              port: 7007
+            initialDelaySeconds: 30
+            periodSeconds: 10
+
+          resources:
+            limits:
+              cpu: "1000m"
+              memory: "2Gi"
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+---
+# ── Service LoadBalancer : génère une IP publique Azure automatiquement
+apiVersion: v1
+kind: Service
+metadata:
+  name: backstage
+  namespace: idp-backstage
+  labels:
+    app: backstage
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 80
+      targetPort: 7007
+      protocol: TCP
+      name: http
+  selector:
+    app: backstage

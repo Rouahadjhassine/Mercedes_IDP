@@ -1,0 +1,101 @@
+# ================================================================
+# PIPELINE CI – Build & Push de l'image Docker Backstage
+# ================================================================
+# Ce pipeline s'exécute automatiquement à chaque commit sur main.
+# Il build l'image Docker de Backstage et la pousse sur l'ACR.
+# ArgoCD détecte ensuite la nouvelle image et met à jour le pod.
+#
+# Variables à configurer dans Azure DevOps (Library > Variable Groups):
+#   - ACR_NAME        : Nom de votre Azure Container Registry (ex: idpmic)
+#   - ACR_LOGINSERVER : Domaine ACR (ex: idpmic.azurecr.io)
+# ================================================================
+
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - idp-backstage/**
+
+pr: none
+
+variables:
+  IMAGE_NAME: "backstage"
+  IMAGE_TAG: "$(Build.BuildId)"
+  IMAGE_LATEST: "latest"
+
+stages:
+
+# ── STAGE 1 : BUILD & PUSH ───────────────────────────────────────
+- stage: BuildAndPush
+  displayName: "🐳 Build & Push Docker Image"
+  jobs:
+  - job: Build
+    pool:
+      vmImage: "ubuntu-latest"
+    steps:
+
+    - checkout: self
+
+    - task: NodeTool@0
+      displayName: "📦 Installer Node.js 22"
+      inputs:
+        versionSpec: "22.x"
+
+    - script: |
+        cd idp-backstage
+        yarn install --immutable
+      displayName: "📦 Installer les dépendances"
+
+    - script: |
+        cd idp-backstage
+        yarn tsc
+      displayName: "✅ Compilation TypeScript"
+
+    - script: |
+        cd idp-backstage
+        yarn build:backend
+      displayName: "🔨 Build du backend"
+
+    - task: AzureCLI@2
+      displayName: "🔐 Connexion à l'ACR et Push de l'image"
+      inputs:
+        azureSubscription: "MIC-IDP"
+        scriptType: "bash"
+        scriptLocation: "inlineScript"
+        inlineScript: |
+          # Connexion à l'ACR
+          az acr login --name $(ACR_NAME)
+
+          echo "🐳 Construction de l'image Docker..."
+          docker build \
+            -t $(ACR_LOGINSERVER)/$(IMAGE_NAME):$(IMAGE_TAG) \
+            -t $(ACR_LOGINSERVER)/$(IMAGE_NAME):$(IMAGE_LATEST) \
+            -f idp-backstage/packages/backend/Dockerfile \
+            idp-backstage/
+
+          echo "📤 Push de l'image vers l'ACR..."
+          docker push $(ACR_LOGINSERVER)/$(IMAGE_NAME):$(IMAGE_TAG)
+          docker push $(ACR_LOGINSERVER)/$(IMAGE_NAME):$(IMAGE_LATEST)
+
+          echo "✅ Image poussée avec succès !"
+          echo "📌 Image: $(ACR_LOGINSERVER)/$(IMAGE_NAME):$(IMAGE_TAG)"
+
+    # Met à jour la référence de l'image dans backstage.yaml
+    # pour que ArgoCD redéploie automatiquement avec la nouvelle image
+    - script: |
+        sed -i "s|image: .*backstage.*|image: $(ACR_LOGINSERVER)/$(IMAGE_NAME):$(IMAGE_TAG)|g" \
+          k8s/backstage.yaml
+        echo "📝 Fichier k8s/backstage.yaml mis à jour avec le tag $(IMAGE_TAG)"
+      displayName: "📝 Mettre à jour la référence d'image dans k8s/backstage.yaml"
+
+    - script: |
+        git config user.email "ci-pipeline@ymi0337.com"
+        git config user.name "Azure DevOps CI"
+        git add k8s/backstage.yaml
+        git diff --staged --quiet || git commit -m "ci: update backstage image to tag $(IMAGE_TAG) [skip ci]"
+        git push origin main
+      displayName: "📤 Commit & Push du manifest mis à jour vers Git"
+      env:
+        AZURE_TOKEN: $(System.AccessToken)

@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: idp-backstage
+  # L'application elle-même doit être créée dans le namespace où ArgoCD est installé
+  namespace: argocd
+  labels:
+    app: idp-backstage
+spec:
+  project: default
+  source:
+    # Remplacez par l'URL de votre dépôt Git (Azure DevOps Git ou GitHub)
+    # Exemple : https://github.com/votre-username-github/terraform-azure-pfe.git
+    # ou https://dev.azure.com/ymi0337/IDP-MIC/_git/IDP-MIC
+    repoURL: 'https://dev.azure.com/ymi0337/IDP-MIC/_git/IDP-MIC'
+    targetRevision: HEAD
+    path: k8s # Le dossier contenant vos manifestes Kubernetes
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: idp-backstage
+  syncPolicy:
+    automated:
+      prune: true     # Supprime les ressources k8s obsolètes supprimées du repo git
+      selfHeal: true  # Corrige automatiquement toute dérive manuelle sur le cluster k8s
+    syncOptions:
+      - CreateNamespace=true # Crée le namespace idp-backstage s'il n'existe pas

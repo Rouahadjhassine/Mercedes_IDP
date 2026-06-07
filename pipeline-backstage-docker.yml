@@ -41,6 +41,7 @@ stages:
     steps:
 
     - checkout: self
+      persistCredentials: true
 
     - task: NodeTool@0
       displayName: "📦 Installer Node.js 22"
@@ -97,9 +98,10 @@ stages:
     - script: |
         git config user.email "ci-pipeline@ymi0337.com"
         git config user.name "Azure DevOps CI"
+        git checkout main
         git add k8s/backstage.yaml
-        git diff --staged --quiet || git commit -m "ci: update backstage image to tag $(IMAGE_TAG) [skip ci]"
-        git push origin main
+        git diff --staged --quiet || {
+          git commit -m "ci: update backstage image to tag $(IMAGE_TAG) [skip ci]"
+          git push origin main
+        }
       displayName: "📤 Commit & Push du manifest mis à jour vers Git"
-      env:
-        AZURE_TOKEN: $(System.AccessToken)

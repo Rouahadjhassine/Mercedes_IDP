@@ -69,7 +69,7 @@ spec:
             # ⚠️ Mettez à jour cette valeur avec l'IP publique du LoadBalancer après déploiement
             # Récupérez l'IP via : kubectl get svc backstage -n idp-backstage
             - name: APP_BASE_URL
-              value: "http://52.142.125.96"   # ← À remplacer par l'EXTERNAL-IP du LoadBalancer
+              value: "https://backstage.135.236.232.55.nip.io"   # ← À remplacer par l'EXTERNAL-IP du LoadBalancer
 
             # ── PostgreSQL
             - name: POSTGRES_HOST
@@ -135,7 +135,7 @@ spec:
               cpu: "250m"
               memory: "512Mi"
 ---
-# ── Service LoadBalancer : génère une IP publique Azure automatiquement
+# ── Service ClusterIP : accessible uniquement via l'Ingress dans le cluster
 apiVersion: v1
 kind: Service
 metadata:
@@ -144,7 +144,7 @@ metadata:
   labels:
     app: backstage
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   ports:
     - port: 80
       targetPort: 7007

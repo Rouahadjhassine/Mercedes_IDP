@@ -69,7 +69,7 @@ spec:
             # ⚠️ Mettez à jour cette valeur avec l'IP publique du LoadBalancer après déploiement
             # Récupérez l'IP via : kubectl get svc backstage -n idp-backstage
             - name: APP_BASE_URL
-              value: "http://localhost"   # ← À remplacer par l'EXTERNAL-IP du LoadBalancer
+              value: "http://52.142.125.96"   # ← À remplacer par l'EXTERNAL-IP du LoadBalancer
 
             # ── PostgreSQL
             - name: POSTGRES_HOST

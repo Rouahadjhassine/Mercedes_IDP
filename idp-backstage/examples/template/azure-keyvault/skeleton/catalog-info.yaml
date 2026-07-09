@@ -2,7 +2,7 @@ apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
   name: ${{ values.component_id }}
-  title: "🔐 ${{ values.key_vault_name }}"
+  title: "KeyVault - ${{ values.key_vault_name }}"
   description: ${{ values.description | dump }}
   annotations:
     dev.azure.com/project: "${{ values.ado_project }}"

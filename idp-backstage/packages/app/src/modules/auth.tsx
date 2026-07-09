@@ -79,14 +79,14 @@ const CustomSignInPage = ({ onSignInSuccess }: SignInPageProps) => {
   const handleSignIn = async () => {
     setLoading(true);
     try {
-      // Clear any cached session so Microsoft always shows the account picker
-      try { await authApi.signOut(); } catch (_) { /* ignore if no session */ }
-      // Force Microsoft account selection popup — prevents silent auto-login
-      await authApi.signIn();
+      // Force Microsoft account selection popup via instantPopup:true.
+      // This opens the OAuth popup immediately and bypasses any cached/silent session.
+      // The backend also injects prompt=select_account into the OAuth URL for extra insurance.
       const identityResponse = await authApi.getBackstageIdentity({
         optional: true,
+        instantPopup: true,
       });
-      const profile = await authApi.getProfile();
+      const profile = await authApi.getProfile({ optional: true });
 
       let identity = identityResponse?.identity;
 
@@ -107,7 +107,7 @@ const CustomSignInPage = ({ onSignInSuccess }: SignInPageProps) => {
       const identityApi = UserIdentity.create({
         identity,
         authApi,
-        profile,
+        profile: profile ?? {},
       });
 
       onSignInSuccess(identityApi);
@@ -143,6 +143,7 @@ const CustomSignInPage = ({ onSignInSuccess }: SignInPageProps) => {
     </div>
   );
 };
+
 
 const customSignInPageBlueprint = SignInPageBlueprint.make({
   params: {

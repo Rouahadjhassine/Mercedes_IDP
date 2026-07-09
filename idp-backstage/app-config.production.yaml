@@ -76,17 +76,18 @@ catalog:
         - allow: [User, Group]
 
 # ─── TechDocs (Production) ────────────────────────────────────────────────────
-# En production sur AKS, les docs sont générées par le pipeline CI/CD Azure DevOps
-# (pipeline-techdocs.yml) et publiées dans Azure Blob Storage.
-# Backstage lit ensuite les docs directement depuis le Storage Account.
+# TechDocs désactivé (pas de Storage Account configuré).
+# Pour l'activer : décommenter la config azureBlobStorage et ajouter les secrets K8s.
 techdocs:
-  builder: 'external'            # Les docs sont générées en dehors de Backstage (par CI/CD)
+  builder: 'local'
   generator:
-    runIn: 'local'               # Ignoré quand builder=external
+    runIn: 'local'
   publisher:
-    type: 'azureBlobStorage'
-    azureBlobStorage:
-      containerName: 'techdocs'
-      credentials:
-        accountName: ${TECHDOCS_AZURE_BLOB_STORAGE_ACCOUNT_NAME}
-        accountKey: ${TECHDOCS_AZURE_BLOB_STORAGE_ACCOUNT_KEY}
+    type: 'local'
+# publisher:
+#   type: 'azureBlobStorage'
+#   azureBlobStorage:
+#     containerName: 'techdocs'
+#     credentials:
+#       accountName: ${TECHDOCS_AZURE_BLOB_STORAGE_ACCOUNT_NAME}
+#       accountKey: ${TECHDOCS_AZURE_BLOB_STORAGE_ACCOUNT_KEY}

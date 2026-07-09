@@ -113,6 +113,18 @@ spec:
                   name: backstage-secrets
                   key: github-token
 
+            # ── TechDocs – Azure Blob Storage (docs générées par CI/CD)
+            - name: TECHDOCS_AZURE_BLOB_STORAGE_ACCOUNT_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: backstage-secrets
+                  key: techdocs-storage-account-name
+            - name: TECHDOCS_AZURE_BLOB_STORAGE_ACCOUNT_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: backstage-secrets
+                  key: techdocs-storage-account-key
+
           # Vérifie que Backstage répond avant de router le trafic
           livenessProbe:
             httpGet:

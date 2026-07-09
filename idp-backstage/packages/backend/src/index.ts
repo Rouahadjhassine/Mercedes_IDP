@@ -15,15 +15,28 @@ backend.add(
 backend.add(import('./actions/ado-pipeline'));
 
 // techdocs plugin
-// backend.add(import('@backstage/plugin-techdocs-backend'));
+backend.add(import('@backstage/plugin-techdocs-backend'));
 
 // auth plugin
 backend.add(import('@backstage/plugin-auth-backend'));
 backend.add(import('@backstage/plugin-auth-backend-module-guest-provider'));
 
 import { createBackendModule } from '@backstage/backend-plugin-api';
-import { authProvidersExtensionPoint, createOAuthProviderFactory } from '@backstage/plugin-auth-node';
+import { authProvidersExtensionPoint, createOAuthProviderFactory, createOAuthAuthenticator } from '@backstage/plugin-auth-node';
 import { microsoftAuthenticator } from '@backstage/plugin-auth-backend-module-microsoft-provider';
+
+// Wraps microsoftAuthenticator to inject prompt=select_account into
+// every authorization URL → forces Azure AD to always show the account picker
+const microsoftAuthenticatorWithPrompt = createOAuthAuthenticator({
+  ...microsoftAuthenticator,
+  async start(input, ctx) {
+    const result = await microsoftAuthenticator.start(input, ctx);
+    // Inject prompt=select_account into the redirect URL
+    const url = new URL(result.url);
+    url.searchParams.set('prompt', 'select_account');
+    return { ...result, url: url.toString() };
+  },
+});
 
 const customAuth = createBackendModule({
   pluginId: 'auth',
@@ -35,7 +48,7 @@ const customAuth = createBackendModule({
         providers.registerProvider({
           providerId: 'microsoft',
           factory: createOAuthProviderFactory({
-            authenticator: microsoftAuthenticator,
+            authenticator: microsoftAuthenticatorWithPrompt,
             async signInResolver(info, ctx) {
               const { profile } = info;
               const email = profile.email;

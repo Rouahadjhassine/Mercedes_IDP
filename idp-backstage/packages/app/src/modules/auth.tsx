@@ -79,8 +79,12 @@ const CustomSignInPage = ({ onSignInSuccess }: SignInPageProps) => {
   const handleSignIn = async () => {
     setLoading(true);
     try {
+      // Clear any cached session so Microsoft always shows the account picker
+      try { await authApi.signOut(); } catch (_) { /* ignore if no session */ }
+      // Force Microsoft account selection popup — prevents silent auto-login
+      await authApi.signIn();
       const identityResponse = await authApi.getBackstageIdentity({
-        optional: false,
+        optional: true,
       });
       const profile = await authApi.getProfile();
 

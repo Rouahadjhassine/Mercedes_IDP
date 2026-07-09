@@ -54,7 +54,7 @@ spec:
         - name: backstage
           # ⚠️  Remplacez par l'URL complète de votre image ACR
           # Exemple : idpmic.azurecr.io/backstage:latest
-          image: idpmic.azurecr.io/backstage:130
+          image: idpmic.azurecr.io/backstage:132
           imagePullPolicy: Always
           ports:
             - containerPort: 7007

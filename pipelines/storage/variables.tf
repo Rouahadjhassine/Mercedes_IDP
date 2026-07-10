@@ -12,8 +12,8 @@ variable "storage_account_name" {
   description = "Nom du compte de stockage (doit être unique)"
   type        = string
   validation {
-    condition     = length(var.storage_account_name) >= 3 && length(var.storage_account_name) <= 24
-    error_message = "Le nom du compte de stockage doit avoir entre 3 et 24 caractères."
+    condition     = length(var.storage_account_name) >= 3 && length(var.storage_account_name) <= 24 && can(regex("^[a-z0-9]+$", var.storage_account_name))
+    error_message = "Le nom du compte de stockage doit avoir entre 3 et 24 caractères et ne contenir que des lettres minuscules et des chiffres."
   }
 }
 

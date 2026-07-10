@@ -25,6 +25,7 @@ spec:
     # ── STEP 1 : INFOS DU COMPOSANT ──────────────────────────
     - title: "📋 Component Information"
       required:
+        - description
         - owner
       properties:
         description:
@@ -85,6 +86,7 @@ spec:
           description: "Unique name, lowercase letters and numbers only (3–24 characters)"
           maxLength: 24
           minLength: 3
+          pattern: "^[a-z0-9]+$"
 
     # ── STEP 3 : BASICS (onglet Basics du portail) ───────────
     - title: "⚙️ Basics — Storage Configuration"

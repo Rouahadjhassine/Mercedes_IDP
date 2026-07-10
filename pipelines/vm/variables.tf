@@ -12,8 +12,8 @@ variable "vm_name" {
   description = "Nom de base de la Machine Virtuelle (max 15 caractères)"
   type        = string
   validation {
-    condition     = length(var.vm_name) >= 1 && length(var.vm_name) <= 15
-    error_message = "Le nom de la VM doit avoir entre 1 et 15 caractères."
+    condition     = length(var.vm_name) >= 1 && length(var.vm_name) <= 15 && can(regex("^[a-zA-Z0-9-]+$", var.vm_name))
+    error_message = "Le nom de la VM doit avoir entre 1 et 15 caractères et ne contenir que des lettres, chiffres et tirets."
   }
 }
 

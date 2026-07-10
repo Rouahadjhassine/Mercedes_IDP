@@ -12,8 +12,8 @@ variable "key_vault_name" {
   description = "Nom du Key Vault (3-24 caractères, unique)"
   type        = string
   validation {
-    condition     = length(var.key_vault_name) >= 3 && length(var.key_vault_name) <= 24
-    error_message = "Le nom du Key Vault doit avoir entre 3 et 24 caractères."
+    condition     = length(var.key_vault_name) >= 3 && length(var.key_vault_name) <= 24 && can(regex("^[a-zA-Z][a-zA-Z0-9-]*[a-zA-Z0-9]$", var.key_vault_name))
+    error_message = "Le nom du Key Vault doit avoir entre 3 et 24 caractères, commencer par une lettre, se terminer par une lettre ou un chiffre, et ne contenir que des caractères alphanumériques et des tirets."
   }
 }
 

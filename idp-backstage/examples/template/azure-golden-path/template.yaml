@@ -75,12 +75,24 @@ spec:
         storage_account_name:
           title: Nom du Compte de Stockage
           type: string
+          description: "Unique name, lowercase letters and numbers only (3–24 characters)"
+          maxLength: 24
+          minLength: 3
+          pattern: "^[a-z0-9]+$"
         key_vault_name:
           title: Nom du Key Vault
           type: string
+          description: "Unique name, alphanumeric and dashes (3–24 characters)"
+          maxLength: 24
+          minLength: 3
+          pattern: "^[a-zA-Z][a-zA-Z0-9-]*[a-zA-Z0-9]$"
         vm_name:
           title: VM Name (max 15 chars)
           type: string
+          description: "VM Name (max 15 characters, alphanumeric and hyphens)"
+          maxLength: 15
+          minLength: 1
+          pattern: "^[a-zA-Z0-9-]+$"
         location:
           title: Azure Region
           type: string

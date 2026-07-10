@@ -84,6 +84,7 @@ spec:
           description: "Unique name, alphanumeric and dashes (3–24 characters)"
           maxLength: 24
           minLength: 3
+          pattern: "^[a-zA-Z][a-zA-Z0-9-]*[a-zA-Z0-9]$"
 
     # ── STEP 3 : LIEN STORAGE ACCOUNT (optionnel) ────────────
     - title: "💾 Link Storage Account (optional)"
@@ -110,6 +111,8 @@ spec:
           title: "📦 Linked Storage Account Name"
           type: string
           description: "Enter the exact name of the Storage Account to save its name as a secret. Leave empty otherwise."
+          maxLength: 24
+          pattern: "^[a-z0-9]*$"
 
     # ── STEP 4 : BASICS (onglet Basics du portail) ───────────
     - title: "⚙️ Basics — Key Vault Configuration"

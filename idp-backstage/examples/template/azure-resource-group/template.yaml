@@ -24,6 +24,7 @@ spec:
     # ── STEP 1 : INFOS DU COMPOSANT ──────────────────────────
     - title: "📋 Component Information"
       required:
+        - description
         - owner
       properties:
         description:

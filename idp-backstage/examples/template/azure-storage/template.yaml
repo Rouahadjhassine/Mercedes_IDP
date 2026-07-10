@@ -83,10 +83,12 @@ spec:
         storage_account_name:
           title: "📦 Storage Account Name"
           type: string
-          description: "Unique name, lowercase letters and numbers only (3–24 characters)"
+          description: "Unique name — lowercase letters and numbers ONLY, 3–24 characters"
           maxLength: 24
           minLength: 3
           pattern: "^[a-z0-9]+$"
+          ui:help: "⚠️ Azure rule: NO hyphens (-), NO uppercase, NO special characters. Example: stockageidp, mystorage01"
+
 
     # ── STEP 3 : BASICS (onglet Basics du portail) ───────────
     - title: "⚙️ Basics — Storage Configuration"

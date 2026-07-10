@@ -84,6 +84,9 @@ spec:
           type: string
           description: "Nom de la Machine Virtuelle (max 15 caractères)"
           maxLength: 15
+          minLength: 1
+          pattern: "^[a-zA-Z0-9-]+$"
+          ui:help: "⚠️ Azure rule: letters, numbers and hyphens (-) only, max 15 chars. Example: vm-idp-dev"
 
     # ── STEP 3 : BASICS ───────────────────────────────────────
     - title: "⚙️ Basics — Instance Details"
